@@ -9,6 +9,12 @@ class Virus:
     """
     __metaclass__ = ABCMeta
 
+    def __init__(self,
+                 incubation_period: int,
+                 illness_days: int):
+        self.incubation_period = incubation_period
+        self.illness_days = illness_days
+
     @abstractmethod
     def get_mortality(self, **kwargs) -> float:
         """
@@ -55,6 +61,11 @@ class SARSCoV2(Virus):
     def __init__(self):
         self.mortality = 0.05
         self.transmission_probability = 0.05
+
+        super().__init__(
+            incubation_period=10,
+            illness_days=7
+        )
 
     def get_mortality(self, **kwargs) -> float:
         return self.mortality
