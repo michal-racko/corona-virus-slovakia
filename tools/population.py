@@ -52,23 +52,29 @@ class Population:
         else:
             return currently_ill
 
+    def get_n_unaffected(self) -> int:
+        """
+        :returns:       number of members who are currently infected
+        """
+        return int((self.illness_days == -1).astype(int).sum())
+
     def get_n_infected(self) -> int:
         """
         :returns:       number of members who are currently infected
         """
-        return self.ill.astype(int).sum()
+        return int(self.ill.astype(int).sum())
 
     def get_n_immune(self) -> int:
         """
         :returns:       number of members who are currently immune
         """
-        return self.ill.astype(int).sum()
+        return int(self.is_immune.astype(int).sum())
 
     def get_n_dead(self) -> int:
         """
         :returns:       number of members who are currently immune
         """
-        return (~self.is_alive).astype(int).sum()
+        return int((~self.is_alive).astype(int).sum())
 
     def infect(self, n: int, random_seed=None):
         """
@@ -91,7 +97,9 @@ class Population:
 
         indexes = indexes[indexes >= 0]
 
-        self.illness_days[indexes][~self.ill[indexes]] = self._day_i
+        day_mask = indexes * ~self.ill[indexes]
+
+        self.illness_days[day_mask] = self._day_i
 
         if n < self.size:
             self.ill[indexes] = True
@@ -115,8 +123,10 @@ class Population:
             np.random.normal(healing_days_mean, healing_days_std, len(self.illness_days))
         )
 
+        immune_mask = self.ill * healed
+
         self.ill[healed] = False
-        self.is_immune[healed] = True
+        self.is_immune[immune_mask] = True
 
     def kill(self, death_probability: float, healing_days: int):
         """

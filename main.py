@@ -1,30 +1,20 @@
-from tools.population import Population
+from tools.plotting import plot_pandemic
+from simulations.exponential_meetings import run_simulation
 
-import matplotlib.pyplot as pl
+VIRUS = 'SARS-CoV2'
+MEAN_INTERACTIONS = 10  # mean number of random interactions among people
+POPULATION_SIZE = 10000  # size of the simulated population
+N_DAYS = 60
+RESULTS_FILE = 'results/exponential.json'
 
 if __name__ == '__main__':
-    population = Population(10000)
+    results = run_simulation(
+        virus_type=VIRUS,
+        population_size=POPULATION_SIZE,
+        n_days=N_DAYS,
+        mean_interactions=MEAN_INTERACTIONS
+    )
 
-    infected_numbers = []
-    dead_numbers = []
+    plot_pandemic(results)
 
-    population.infect(15)
-
-    for i in range(30):
-        n_infected = population.get_members(8000).astype(int).sum()
-
-        population.infect(n_infected)
-        population.heal(14, 5)
-        population.kill(0.05, 14)
-        population.next_day()
-
-        infected_numbers.append(
-            population.get_n_infected()
-        )
-
-        dead_numbers.append(
-            population.get_n_dead()
-        )
-
-    pl.plot(dead_numbers)
-    pl.show()
+    results.to_json(RESULTS_FILE)
