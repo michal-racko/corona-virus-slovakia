@@ -10,7 +10,7 @@ Run:
 
 `python main.py`
 
-#### Populations:
+### Populations:
 
 Models revolve around populations which are represented by the PopulationBase class (`tools/population`), which:
 
