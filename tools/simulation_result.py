@@ -1,5 +1,7 @@
 import json
 
+from tools.general import ensure_dir
+
 
 class SimulationResult:
     """
@@ -27,6 +29,8 @@ class SimulationResult:
         """
         Saves results as a .json file to the given path
         """
+        ensure_dir('/'.join(filepath.split('/')[:-1]))
+
         with open(filepath, 'w') as f:
             json.dump({
                 'days': self.days,

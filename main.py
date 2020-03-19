@@ -8,6 +8,7 @@ MEAN_INTERACTIONS = 5  # mean number of random interactions among people
 POPULATION_SIZE = 50000  # size of the simulated population
 N_DAYS = 120
 RESULTS_FILE = 'results/exponential.json'
+PLOTTING_FILE = 'plots/exponential.png'
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,7 +27,7 @@ if __name__ == '__main__':
 
     logging.info('Plotting results')
 
-    plot_pandemic(results)
+    plot_pandemic(results, filepath=PLOTTING_FILE)
 
     logging.info(f'Saving results to: {RESULTS_FILE}')
 

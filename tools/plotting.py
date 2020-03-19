@@ -1,5 +1,8 @@
+import logging
+
 import matplotlib.pyplot as pl
 
+from tools.general import ensure_dir
 from tools.simulation_result import SimulationResult
 
 
@@ -49,5 +52,9 @@ def plot_pandemic(data: SimulationResult, filepath=None):
         pl.show()
 
     else:
+        ensure_dir('/'.join(filepath.split('/')[:-1]))
+
         pl.savefig(filepath)
         pl.close()
+
+        logging.info(f'Result plot saved to: {filepath}')
