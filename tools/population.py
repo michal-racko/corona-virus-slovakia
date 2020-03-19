@@ -97,9 +97,11 @@ class Population:
 
         indexes = indexes[indexes >= 0]
 
-        day_mask = indexes * ~self.ill[indexes]
+        current_days = self.illness_days[indexes]
 
-        self.illness_days[day_mask] = self._day_i
+        current_days[self.illness_days[indexes] == -1] = self._day_i
+
+        self.illness_days[indexes] = current_days
 
         if n < self.size:
             self.ill[indexes] = True
