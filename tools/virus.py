@@ -68,11 +68,11 @@ class Virus:
 class SARSCoV2(Virus):
     def __init__(self):
         self._mortality = 0.03
-        self._transmission_probability = 0.0125
+        self._transmission_probability = 0.04  # 0.018
 
         super().__init__(
             illness_days_mean=6.5,
-            illness_days_std=1
+            illness_days_std=1.5
         )
 
     def get_mortality(self, **kwargs) -> float:

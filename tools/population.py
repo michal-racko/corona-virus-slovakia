@@ -28,7 +28,7 @@ class PopulationBase:
 
     def __init__(self,
                  size: int,
-                 mean_stochastic_interactions=7.5,
+                 mean_stochastic_interactions=5,
                  mean_periodic_interactions=5):
         self._size = size
         self._indexes = np.arange(size)
@@ -96,23 +96,23 @@ class PopulationBase:
         n_alive = self._is_alive.astype(int).sum()
 
         if n is None:
-            return np.random.gamma(
-                1.5,
-                self._mean_stochastic_interactions,
+            return np.random.negative_binomial(
+                2.5,
+                0.8,
                 n_alive
             ).astype(int)
 
         elif n < n_alive:
-            return np.random.gamma(
-                1.5,
-                self._mean_stochastic_interactions,
+            return np.random.negative_binomial(
+                2.5,
+                0.8,
                 n
             ).astype(int)
 
         else:
-            return np.random.gamma(
-                1.5,
-                self._mean_stochastic_interactions,
+            return np.random.negative_binomial(
+                2.5,
+                0.8,
                 n_alive
             ).astype(int)
 
