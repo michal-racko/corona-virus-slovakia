@@ -43,10 +43,11 @@ class PopulationCentreBase:
     def __len__(self):
         return self._size
 
-    def infect(self, n_infected: int):
+    def infect(self, n_infected: int, random_seed=None):
         for population in self._populations:
             population.infect(
-                int(len(population) / len(self) * n_infected)
+                int(len(population) / len(self) * n_infected),
+                random_seed=random_seed
             )
 
     def get_health_states(self, n=None, random_seed=None) -> np.ndarray:
@@ -83,8 +84,7 @@ class PopulationCentreBase:
             interaction_multiplicities = population.get_stochastic_interaction_multiplicities()
 
             for interaction_i in range(interaction_multiplicities.max()):
-                transmission_mask = (interaction_multiplicities > interaction_i) * \
-                                    (np.random.random(len(health_states)) <= self._virus.get_transmission_probability())
+                transmission_mask = (interaction_multiplicities > interaction_i)
 
                 n_infected += health_states[transmission_mask].astype(int).sum()
 
@@ -98,16 +98,17 @@ class PopulationCentreBase:
         n_infected = 0
 
         for population in self._populations:
-            health_states = population.get_healt_states()
+            health_states = population.get_healt_states(random_seed=self._random_seed)
             interaction_multiplicities = population.get_periodic_interaction_multiplicities()
 
             for interaction_i in range(interaction_multiplicities.max()):
-                transmission_mask = (interaction_multiplicities > interaction_i) * \
-                                    (np.random.random(len(health_states)) <= self._virus.get_transmission_probability())
+                transmission_mask = (interaction_multiplicities > interaction_i) * (
+                    np.random.random(len(interaction_multiplicities)) < 0.25
+                )
 
                 n_infected += health_states[transmission_mask].astype(int).sum()
 
-        self.infect(n_infected)
+        self.infect(n_infected, random_seed=self._random_seed)
 
     def _log_data(self):
         n_unaffected = 0
@@ -133,17 +134,11 @@ class PopulationCentreBase:
 
     def _heal(self):
         for population in self._populations:
-            population.heal(
-                self._virus.illness_days_mean,
-                self._virus.illness_days_std
-            )
+            population.heal()
 
     def _kill(self):
         for population in self._populations:
-            population.kill(
-                self._virus.get_mortality(),
-                self._virus.illness_days_mean
-            )
+            population.kill()
 
     def next_day(self):
         self._interact_stochastic()

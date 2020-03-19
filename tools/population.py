@@ -2,6 +2,8 @@ import time
 
 import numpy as np
 
+from tools.virus import Virus
+
 
 class PopulationBase:
     """
@@ -28,8 +30,8 @@ class PopulationBase:
 
     def __init__(self,
                  size: int,
-                 mean_stochastic_interactions=5,
-                 mean_periodic_interactions=5):
+                 virus: Virus,
+                 mean_periodic_interactions=1.5):
         self._size = size
         self._indexes = np.arange(size)
 
@@ -42,8 +44,9 @@ class PopulationBase:
         self._is_immune = np.zeros(size).astype(bool)
         self._is_alive = np.ones(size).astype(bool)
 
-        self._mean_stochastic_interactions = mean_stochastic_interactions
         self._mean_periodic_interactions = mean_periodic_interactions
+
+        self._virus = virus
 
         self._day_i = 0
 
@@ -97,22 +100,22 @@ class PopulationBase:
 
         if n is None:
             return np.random.negative_binomial(
-                2.5,
-                0.8,
+                self._virus.R,
+                self._virus.p,
                 n_alive
             ).astype(int)
 
         elif n < n_alive:
             return np.random.negative_binomial(
-                2.5,
-                0.8,
+                self._virus.R,
+                self._virus.p,
                 n
             ).astype(int)
 
         else:
             return np.random.negative_binomial(
-                2.5,
-                0.8,
+                self._virus.R,
+                self._virus.p,
                 n_alive
             ).astype(int)
 
@@ -128,19 +131,19 @@ class PopulationBase:
 
         if n is None:
             return np.random.poisson(
-                self._mean_stochastic_interactions,
+                self._mean_periodic_interactions,
                 n_alive
             ).astype(int)
 
         elif n < n_alive:
             return np.random.poisson(
-                self._mean_stochastic_interactions,
+                self._mean_periodic_interactions,
                 n
             ).astype(int)
 
         else:
             return np.random.poisson(
-                self._mean_stochastic_interactions,
+                self._mean_periodic_interactions,
                 n_alive
             ).astype(int)
 
@@ -212,20 +215,16 @@ class PopulationBase:
 
         self._is_new_case = self._illness_days_start == self._day_i
 
-    def heal(self,
-             healing_days_mean: int,
-             healing_days_std: int):
+    def heal(self):
         """
         Heals members of the population if they are infected
-
-        :param healing_days_mean:       mean number of days it takes for
-                                        a diseased person to recover
-
-        :param healing_days_std:        stev of days it takes
-                                        a diseased person to recover
         """
         healed = (self._day_i - self._illness_days_start) >= abs(
-            np.random.normal(healing_days_mean, healing_days_std, len(self._illness_days_start))
+            np.random.normal(
+                self._virus.illness_days_mean,
+                self._virus.illness_days_std,
+                len(self._illness_days_start)
+            )
         )
 
         immune = self._ill * healed
@@ -235,11 +234,11 @@ class PopulationBase:
 
         self._is_immune[immune] = True
 
-    def kill(self, mortality: float, healing_days: int):
+    def kill(self):
         """
         Kills a portion of the infected population
         """
-        daily_prob = mortality / healing_days
+        daily_prob = self._virus.get_mortality() / self._virus.illness_days_mean
 
         ill_alive = (self._ill * self._is_alive).copy()
 

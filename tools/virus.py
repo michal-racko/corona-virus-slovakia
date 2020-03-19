@@ -23,15 +23,11 @@ class Virus:
         self.illness_days_mean = illness_days_mean
         self.illness_days_std = illness_days_std
 
-    @abstractmethod
-    def get_mortality(self, **kwargs) -> float:
-        """
-        :returns:       mortality ratio for the given parameters
-        """
-        pass
+        self.R = None
+        self.p = None
 
     @abstractmethod
-    def get_transmission_probability(self, **kwargs) -> float:
+    def get_mortality(self, **kwargs) -> float:
         """
         :returns:       mortality ratio for the given parameters
         """
@@ -67,16 +63,15 @@ class Virus:
 
 class SARSCoV2(Virus):
     def __init__(self):
-        self._mortality = 0.03
-        self._transmission_probability = 0.04  # 0.018
-
         super().__init__(
             illness_days_mean=6.5,
-            illness_days_std=1.5
+            illness_days_std=1
         )
+
+        self._mortality = 0.03
+
+        self.R = 2.4
+        self.p = 0.93
 
     def get_mortality(self, **kwargs) -> float:
         return self._mortality
-
-    def get_transmission_probability(self, **kwargs) -> float:
-        return self._transmission_probability

@@ -5,10 +5,10 @@ from simulations.single_city import run_simulation
 
 
 VIRUS = 'SARS-CoV2'
-POPULATION_SIZE = 300000  # size of the simulated population
-N_DAYS = 120
-RESULTS_FILE = 'results/exponential.json'
-PLOTTING_FILE = 'plots/exponential.png'
+POPULATION_SIZE = 100000  # size of the simulated population
+N_DAYS = 160
+RESULTS_FILE = 'results/city_1M.json'
+PLOTTING_FILE = 'plots/city_1M.png'
 
 logging.basicConfig(
     level=logging.INFO,
