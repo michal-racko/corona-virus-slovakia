@@ -7,44 +7,58 @@ from tools.simulation_result import SimulationResult
 
 
 def plot_pandemic(data: SimulationResult, filepath=None):
-    pl.subplot(211)
+    fig, (ax1, ax2, ax3) = pl.subplots(
+        3,
+        sharex=True,
+        figsize=(8, 10)
+    )
 
-    p1 = pl.plot(
+    ax1.set_title('COVID19 simulation', fontsize=20)
+
+    p1 = ax1.plot(
         data.days,
         data.unaffected,
         'tab:blue',
         linewidth=2
     )
 
-    p2 = pl.plot(
+    p2 = ax1.plot(
         data.days,
         data.infected,
         'tab:red',
         linewidth=2
     )
 
-    p3 = pl.plot(
+    p3 = ax1.plot(
         data.days,
         data.immune,
         'tab:green',
         linewidth=2
     )
 
-    pl.legend(
+    ax1.legend(
         (p1[0], p2[0], p3[0]),
         ('Unafected', 'Infected', 'Immune')
     )
 
-    pl.subplot(212)
+    p4 = ax2.plot(
+        data.days,
+        data.new_cases,
+        'tab:red',
+        linewidth=2
+    )
 
-    p4 = pl.plot(
+    ax2.legend((p4[0],), ('New cases',))
+
+    p5 = ax3.plot(
         data.days,
         data.dead,
         'k',
         linewidth=2
     )
 
-    pl.legend((p4[0],), ('Dead',))
+    ax3.legend((p5[0],), ('Dead',))
+    ax3.set_xlabel('Days', fontsize=16)
 
     pl.tight_layout()
 
