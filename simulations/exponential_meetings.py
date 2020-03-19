@@ -1,7 +1,9 @@
+import logging
+
 import numpy as np
 
 from tools.virus import Virus
-from tools.population import Population
+from tools.population import PopulationBase
 from tools.simulation_result import SimulationResult
 
 """
@@ -10,16 +12,16 @@ Numbers of interactions are drawn from an exponential distribution.
 """
 
 
-def _shuffle_people(current_population: Population,
+def _shuffle_people(current_population: PopulationBase,
                     virus: Virus,
                     population_size: int,
-                    mean_interactions) -> Population:
+                    mean_interactions) -> PopulationBase:
     """
     Alters health states of members of the given population by letting them meet randomly
 
     :returns:       Updated population
     """
-    health_states = current_population.get_members(population_size)
+    health_states = current_population.get_healt_states(population_size)
 
     interaction_multiplicities = np.random.exponential(
         mean_interactions,
@@ -42,7 +44,7 @@ def run_simulation(virus_type: str,
                    n_days: int,
                    mean_interactions=25) -> SimulationResult:
     virus = Virus.from_string(virus_type)
-    population = Population(population_size)
+    population = PopulationBase(population_size)
 
     population.infect(10)
 
@@ -54,7 +56,8 @@ def run_simulation(virus_type: str,
     dead_numbers = []
 
     for day_i in range(n_days):
-        days.append(day_i)
+        if day_i % 10 == 0:
+            logging.info(f'day: {day_i}')
 
         population = _shuffle_people(
             population,
@@ -73,17 +76,14 @@ def run_simulation(virus_type: str,
             virus.illness_days_mean
         )
 
-        population.next_day()
+        days.append(day_i)
 
         infected_numbers.append(population.get_n_infected())
         unaffected_numbers.append(population.get_n_unaffected())
         immune_numbers.append(population.get_n_immune())
         dead_numbers.append(population.get_n_dead())
 
-    import matplotlib.pyplot as pl
-
-    pl.hist(population.illness_days)
-    pl.show()
+        population.next_day()
 
     return SimulationResult(
         days=days,

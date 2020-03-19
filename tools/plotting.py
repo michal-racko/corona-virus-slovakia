@@ -3,25 +3,28 @@ import matplotlib.pyplot as pl
 from tools.simulation_result import SimulationResult
 
 
-def plot_pandemic(data: SimulationResult):
+def plot_pandemic(data: SimulationResult, filepath=None):
     pl.subplot(211)
 
     p1 = pl.plot(
         data.days,
         data.unaffected,
-        'tab:blue'
+        'tab:blue',
+        linewidth=2
     )
 
     p2 = pl.plot(
         data.days,
         data.infected,
-        'tab:red'
+        'tab:red',
+        linewidth=2
     )
 
     p3 = pl.plot(
         data.days,
         data.immune,
-        'tab:green'
+        'tab:green',
+        linewidth=2
     )
 
     pl.legend(
@@ -34,10 +37,17 @@ def plot_pandemic(data: SimulationResult):
     p4 = pl.plot(
         data.days,
         data.dead,
-        'k'
+        'k',
+        linewidth=2
     )
 
     pl.legend((p4[0],), ('Dead',))
 
     pl.tight_layout()
-    pl.show()
+
+    if filepath is None:
+        pl.show()
+
+    else:
+        pl.savefig(filepath)
+        pl.close()

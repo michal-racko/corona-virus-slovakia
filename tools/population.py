@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Population:
+class PopulationBase:
     """
     Abstracts a population of people e.g. in a city.
 
@@ -23,30 +23,37 @@ class Population:
 
     def __init__(self,
                  size: int):
-        self.size = size
-        self.indexes = np.arange(size)
+        self._size = size
+        self._indexes = np.arange(size)
 
-        self.ill = np.zeros(size).astype(bool)
-        self.illness_days = np.ones(size) * -1
+        self._ill = np.zeros(size).astype(bool)
+        self._illness_days = np.ones(size) * -1
 
-        self.is_immune = np.zeros(size).astype(bool)
-        self.is_alive = np.ones(size).astype(bool)
+        self._is_immune = np.zeros(size).astype(bool)
+        self._is_alive = np.ones(size).astype(bool)
 
         self._day_i = 0
 
     def __len__(self):
-        return self.size
+        return self._size
 
-    def get_members(self, n: int, random_seed=None) -> np.ndarray:
+    def get_healt_states(self, n=None, random_seed=None) -> np.ndarray:
         """
-        :returns:       health state of randomly selected members of the population
+        :param n:               subsample size (returns all members by default)
+
+        :param random_seed:     random seed to be used for the random selection
+
+        :returns:               health state of randomly selected members of the population
         """
         if random_seed is not None:
             np.random.seed(random_seed)
 
-        currently_ill = self.ill[self.is_alive]
+        currently_ill = self._ill[self._is_alive]
 
-        if n < len(currently_ill):
+        if n is None:
+            return currently_ill
+
+        elif n < len(currently_ill):
             return np.random.choice(currently_ill, n, replace=False)
 
         else:
@@ -56,25 +63,25 @@ class Population:
         """
         :returns:       number of members who are currently infected
         """
-        return int((self.illness_days == -1).astype(int).sum())
+        return int((self._illness_days == -1).astype(int).sum())
 
     def get_n_infected(self) -> int:
         """
         :returns:       number of members who are currently infected
         """
-        return int(self.ill.astype(int).sum())
+        return int(self._ill.astype(int).sum())
 
     def get_n_immune(self) -> int:
         """
         :returns:       number of members who are currently immune
         """
-        return int(self.is_immune.astype(int).sum())
+        return int(self._is_immune.astype(int).sum())
 
     def get_n_dead(self) -> int:
         """
         :returns:       number of members who are currently immune
         """
-        return int((~self.is_alive).astype(int).sum())
+        return int((~self._is_alive).astype(int).sum())
 
     def infect(self, n: int, random_seed=None):
         """
@@ -83,10 +90,10 @@ class Population:
         if random_seed is not None:
             np.random.seed(random_seed)
 
-        infectable = self.indexes.copy()
-        infectable[self.is_immune * ~self.is_alive] = -1
+        infectable = self._indexes.copy()
+        infectable[self._is_immune * ~self._is_alive] = -1
 
-        if n < self.size:
+        if n < self._size:
             indexes = np.random.choice(
                 infectable,
                 n
@@ -97,17 +104,17 @@ class Population:
 
         indexes = indexes[indexes >= 0]
 
-        current_days = self.illness_days[indexes]
+        current_days = self._illness_days[indexes]
 
-        current_days[self.illness_days[indexes] == -1] = self._day_i
+        current_days[self._illness_days[indexes] == -1] = self._day_i
 
-        self.illness_days[indexes] = current_days
+        self._illness_days[indexes] = current_days
 
-        if n < self.size:
-            self.ill[indexes] = True
+        if n < self._size:
+            self._ill[indexes] = True
 
         else:
-            self.ill[:] = True
+            self._ill[:] = True
 
     def heal(self,
              healing_days_mean: int,
@@ -121,41 +128,26 @@ class Population:
         :param healing_days_std:        stev of days it takes
                                         a diseased person to recover
         """
-        healed = (self._day_i - self.illness_days) >= abs(
-            np.random.normal(healing_days_mean, healing_days_std, len(self.illness_days))
+        healed = (self._day_i - self._illness_days) >= abs(
+            np.random.normal(healing_days_mean, healing_days_std, len(self._illness_days))
         )
 
-        immune_mask = self.ill * healed
+        immune_mask = self._ill * healed
 
-        self.ill[healed] = False
-        self.is_immune[immune_mask] = True
+        self._ill[healed] = False
+        self._is_immune[immune_mask] = True
 
-    def kill(self, death_probability: float, healing_days: int):
+    def kill(self, mortality: float, healing_days: int):
         """
         Kills a portion of the infected population
         """
-        daily_prob = death_probability / healing_days
+        daily_prob = mortality / healing_days
 
-        ill_alive = (self.ill * self.is_alive).copy()
+        ill_alive = (self._ill * self._is_alive).copy()
 
-        self.is_alive[ill_alive] = np.random.random(
+        self._is_alive[ill_alive] = np.random.random(
             ill_alive.astype(int).sum()
         ) > daily_prob
 
     def next_day(self):
         self._day_i += 1
-
-
-class City(Population):
-    """
-    Abstracts a population living in an urban area
-    """
-
-    def __init__(self,
-                 size: int,
-                 latitude: float,
-                 longitude: float):
-        self.latitude = latitude
-        self.longitude = longitude
-
-        super().__init__(size)

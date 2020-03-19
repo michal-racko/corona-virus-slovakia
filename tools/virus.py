@@ -1,6 +1,9 @@
 import re
+import typing
 
 from abc import ABCMeta, abstractmethod
+
+virus_type = typing.TypeVar('virus_type', bound='Virus')
 
 
 class Virus:
@@ -38,7 +41,7 @@ class Virus:
     def from_string(cls,
                     string_option: str,
                     *args,
-                    **kwargs):
+                    **kwargs) -> virus_type:
         """
         Creates an object of the subclass whose name matches string_option.
 
@@ -64,8 +67,8 @@ class Virus:
 
 class SARSCoV2(Virus):
     def __init__(self):
-        self.mortality = 0.05
-        self.transmission_probability = 0.05
+        self._mortality = 0.05
+        self._transmission_probability = 0.05
 
         super().__init__(
             illness_days_mean=10,
@@ -73,7 +76,7 @@ class SARSCoV2(Virus):
         )
 
     def get_mortality(self, **kwargs) -> float:
-        return self.mortality
+        return self._mortality
 
     def get_transmission_probability(self, **kwargs) -> float:
-        return self.transmission_probability
+        return self._transmission_probability
