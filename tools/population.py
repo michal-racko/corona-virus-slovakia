@@ -247,4 +247,7 @@ class PopulationBase:
         ) > daily_prob
 
     def next_day(self):
+        """
+        Next day of the simulation
+        """
         self._day_i += 1

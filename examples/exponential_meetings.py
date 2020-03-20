@@ -13,7 +13,7 @@ Numbers of interactions are drawn from an exponential distribution.
 
 
 def _shuffle_people(current_population: PopulationBase,
-                    virus: Virus) -> PopulationBase:
+                    mean_interactions) -> PopulationBase:
     """
     Alters health states of members of the given population by letting them meet randomly
 
@@ -21,23 +21,13 @@ def _shuffle_people(current_population: PopulationBase,
     """
     health_states = current_population.get_healt_states()
 
-    interaction_multiplicities = current_population.get_stochastic_interaction_multiplicities()
+    interaction_multiplicities = np.random.exponential(
+        mean_interactions,
+        len(health_states)
+    ).astype(int)
 
     for interaction_i in range(interaction_multiplicities.max()):
-        transmission_mask = (interaction_multiplicities > interaction_i) * \
-                            (np.random.random(len(health_states)) <= virus.get_transmission_probability())
-
-        n_infected = health_states[transmission_mask].astype(int).sum()
-
-        current_population.infect(n_infected)
-
-    interaction_multiplicities = current_population.get_periodic_interaction_multiplicities()
-
-    health_states = current_population.get_healt_states(random_seed=42)
-
-    for interaction_i in range(interaction_multiplicities.max()):
-        transmission_mask = (interaction_multiplicities > interaction_i) * \
-                            (np.random.random(len(health_states)) <= virus.get_transmission_probability())
+        transmission_mask = (interaction_multiplicities > interaction_i)
 
         n_infected = health_states[transmission_mask].astype(int).sum()
 
@@ -48,9 +38,10 @@ def _shuffle_people(current_population: PopulationBase,
 
 def run_simulation(virus_type: str,
                    population_size: int,
-                   n_days: int) -> SimulationResult:
+                   n_days: int,
+                   mean_interactions=25) -> SimulationResult:
     virus = Virus.from_string(virus_type)
-    population = PopulationBase(population_size)
+    population = PopulationBase(population_size, virus)
 
     population.infect(10)
 
@@ -68,18 +59,12 @@ def run_simulation(virus_type: str,
 
         population = _shuffle_people(
             population,
-            virus
+            mean_interactions
         )
 
-        population.heal(
-            virus.illness_days_mean,
-            virus.illness_days_std
-        )
+        population.heal()
 
-        population.kill(
-            virus.get_mortality(),
-            virus.illness_days_mean
-        )
+        population.kill()
 
         days.append(day_i)
 
