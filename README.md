@@ -10,6 +10,12 @@ Run:
 
 `python main.py`
 
+Computational resources used (simulation with a single city with 6 million inhabitants 
+in 10 different populations):
+- RAM: <500 MB
+- CPU: 1.6 s per simulated day
+
+
 ### Populations:
 
 Models revolve around populations which are represented by the PopulationBase class (`tools/population.py`), which:
@@ -65,3 +71,4 @@ and heuristically define social interaction patterns for typical Slovak populati
 - add data readers for various sources of municipal data (town populations, migration matrixes, ...)
 - prepare a model with all Slovak cities, towns and villages
 - prepare plotting / result visualization for geographical simulations
+- run on multiple CPU cores
