@@ -72,3 +72,6 @@ def plot_pandemic(data: SimulationResult, filepath=None):
         pl.close()
 
         logging.info(f'Result plot saved to: {filepath}')
+
+
+

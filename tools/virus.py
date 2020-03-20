@@ -71,7 +71,7 @@ class SARSCoV2(Virus):
         self._mortality = 0.03
 
         self.R = 2.4
-        self.p = 0.93
+        self.p = 0.92
 
     def get_mortality(self, **kwargs) -> float:
         return self._mortality

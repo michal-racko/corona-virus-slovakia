@@ -1,12 +1,12 @@
 import logging
 
 from tools.plotting import plot_pandemic
-from examples.single_city import run_simulation
+from examples.multiple_cities import run_simulation
 
 
 VIRUS = 'SARS-CoV2'
 POPULATION_SIZE = 6000000  # size of the simulated population
-N_DAYS = 160
+N_DAYS = 60
 RESULTS_FILE = 'results/single-city.json'
 PLOTTING_FILE = 'plots/single-city.png'
 
