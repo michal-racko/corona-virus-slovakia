@@ -1,6 +1,6 @@
-from tools.virus import Virus
-from tools.population import PopulationBase
-from tools.simulation_result import SimulationResult
+from tools.simulation.virus import Virus
+from tools.simulation.population import PopulationBase
+from tools.data_structure import SimulationResult
 
 """
 A basic example of how to use the PopulationBase class

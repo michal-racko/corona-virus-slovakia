@@ -2,10 +2,10 @@ import logging
 
 import numpy as np
 
-from tools.virus import Virus
-from tools.population import PopulationBase
-from tools.simulation_result import SimulationResult
-from tools.population_centre import PopulationCentreBase
+from tools.simulation.virus import Virus
+from tools.simulation.population import PopulationBase
+from tools.data_structure import SimulationResult
+from tools.simulation.population_centre import PopulationCentreBase
 
 CITIES = [
     {

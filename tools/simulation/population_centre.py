@@ -3,8 +3,8 @@ import numpy as np
 
 from typing import List
 
-from tools.virus import Virus
-from tools.population import PopulationBase
+from tools.simulation.virus import Virus
+from tools.simulation.population import PopulationBase
 
 
 class PopulationCentreBase:

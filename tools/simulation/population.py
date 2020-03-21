@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from tools.virus import Virus
+from tools.simulation.virus import Virus
 
 
 class PopulationBase:

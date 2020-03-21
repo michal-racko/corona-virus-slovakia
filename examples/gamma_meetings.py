@@ -1,10 +1,8 @@
 import logging
 
-import numpy as np
-
-from tools.virus import Virus
-from tools.population import PopulationBase
-from tools.simulation_result import SimulationResult
+from tools.simulation.virus import Virus
+from tools.simulation.population import PopulationBase
+from tools.data_structure import SimulationResult
 
 """
 Simulates a single population whose members randomly meet each other each day.

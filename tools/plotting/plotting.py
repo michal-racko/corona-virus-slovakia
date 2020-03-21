@@ -3,7 +3,7 @@ import logging
 import matplotlib.pyplot as pl
 
 from tools.general import ensure_dir
-from tools.simulation_result import SimulationResult
+from tools.data_structure import SimulationResult
 
 
 def plot_pandemic(data: SimulationResult, filepath=None):
