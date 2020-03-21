@@ -25,3 +25,19 @@ town_locations_file: data/sensitive/obce1.xlsx
 # === outputs ===
 
 result_file: results/single-city.json
+
+# === Plotting ===
+
+individual_cities:
+  dir: plots/individual
+  cities:
+    - Martin
+    - Nitra
+    - Trenčín
+    - Trnava
+    - Banská Bystrica
+    - Žilina
+    - Poprad
+    - Prešov
+    - Bratislava-Ružinov
+    - Bratislava-Petržalka

@@ -10,7 +10,7 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s'
 )
 
-DEFAULT_CONFIG_PATH = 'config/plotting.yml'
+DEFAULT_CONFIG_PATH = 'config/monte_carlo.yml'
 
 parser = argparse.ArgumentParser(
     description='A Monte Carlo simulation of virus spreading'
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     logging.info('Plotting simulation results')
 
     data = GeographicalResult.read_json(
-        config.get('input_data')
+        config.get('result_file')
     )
 
     individual_city_dir = config.get('individual_cities', 'dir')

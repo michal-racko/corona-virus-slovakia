@@ -1,12 +1,19 @@
 import logging
 
+import numpy as np
 import matplotlib.pyplot as pl
 
+from tools.config import Config
 from tools.general import ensure_dir
+from tools.simulation.virus import Virus
 from tools.data_structure import TimeSeriesResult
 
 
 def plot_pandemic(data: TimeSeriesResult, filepath=None):
+    config = Config()
+
+    virus = Virus.from_string(config.get('virus', 'name'))
+
     fig, (ax1, ax2, ax3) = pl.subplots(
         3,
         sharex=True,
@@ -41,6 +48,8 @@ def plot_pandemic(data: TimeSeriesResult, filepath=None):
         ('Unafected', 'Infected', 'Immune')
     )
 
+    ax1.grid(True)
+
     p4 = ax2.plot(
         data.days,
         data.new_cases,
@@ -48,17 +57,44 @@ def plot_pandemic(data: TimeSeriesResult, filepath=None):
         linewidth=2
     )
 
-    ax2.legend((p4[0],), ('New cases',))
-
-    p5 = ax3.plot(
+    p5 = ax2.plot(
         data.days,
         data.dead,
         'k',
         linewidth=2
     )
 
-    ax3.legend((p5[0],), ('Dead',))
+    ax2.legend((p4[0], p5[0]), ('New cases', 'Dead'))
+
+    ax2.grid(True)
+
+    infected = np.array(data.infected)
+
+    p6 = ax3.plot(
+        data.days,
+        infected * virus.asymptomatic_ratio,
+        'tab:blue',
+        linewidth=2
+    )
+
+    p7 = ax3.plot(
+        data.days,
+        infected * virus.mild_symptoms_ratio,
+        'tab:green',
+        linewidth=2
+    )
+
+    p8 = ax3.plot(
+        data.days,
+        infected * virus.hospitalized_ratio,
+        'tab:red',
+        linewidth=2
+    )
+
+    ax3.legend((p6[0], p7[0], p8[0],), ('Asymptomatic', 'Mild symptoms', 'Hospitalized'))
     ax3.set_xlabel('Days', fontsize=16)
+
+    ax3.grid(True)
 
     pl.tight_layout()
 

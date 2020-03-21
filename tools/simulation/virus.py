@@ -16,7 +16,9 @@ class Virus:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self,
+                 asymptomatic_ratio: float,
+                 hospitalized_ratio: float):
         self._config = Config()
 
         self.illness_days_mean = self._config.get('virus', 'infectious_days_mean')
@@ -34,6 +36,10 @@ class Virus:
         logging.info(
             f'Initialized the {self.__class__.__name__} virus with R0={self.R:.4f}'
         )
+
+        self.asymptomatic_ratio = asymptomatic_ratio
+        self.hospitalized_ratio = hospitalized_ratio
+        self.mild_symptoms_ratio = 1 - hospitalized_ratio - asymptomatic_ratio
 
     @abstractmethod
     def get_mortality(self, **kwargs) -> float:
@@ -72,7 +78,10 @@ class Virus:
 
 class SARSCoV2(Virus):
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            asymptomatic_ratio=0.4,
+            hospitalized_ratio=0.1
+        )
 
         self._mortality = 0.03
 
