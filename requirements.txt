@@ -1,2 +1,5 @@
-numpy
 matplotlib
+numpy
+pandas
+pyyaml
+scipy

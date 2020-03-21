@@ -1,6 +1,6 @@
 from tools.simulation.virus import Virus
 from tools.simulation.population import PopulationBase
-from tools.data_structure import SimulationResult
+from tools.data_structure import TimeSeriesResult
 
 """
 A basic example of how to use the PopulationBase class
@@ -24,7 +24,7 @@ def run_simulation(virus_type: str,
     dead_numbers = []
 
     for day_i in range(n_days):
-        health_states = population.get_healt_states(
+        health_states = population.get_health_states(
             int(population_size * 0.5)
         )  # get health states of randomly selected half of the population
 
@@ -58,8 +58,8 @@ def run_simulation(virus_type: str,
 
         population.next_day()  # see you all tomorrow
 
-    return SimulationResult(
-        days=days,
+    return TimeSeriesResult(
+        simulation_days=days,
         infected=infected_numbers,
         unaffected=unaffected_numbers,
         immune=immune_numbers,

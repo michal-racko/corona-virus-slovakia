@@ -1,0 +1,27 @@
+# === Simulation parameters ===
+
+simulation_days: 120
+n_processes: 12
+
+population:
+  mean_periodic_interactions: 2
+  mean_stochastic_interactions: 15
+
+# === Parameters of the virus ===
+
+virus:
+  name: SARS-CoV2
+  transmission_probability: 0.01639
+  infectious_days_mean: 6.5
+  infectious_days_std: 1
+
+# === inputs ===
+
+city_csv: data/slovak_counties.csv
+
+# === outputs ===
+
+result_file: results/single-city.json
+
+plotting:
+  pandemic_plot: plots/single-city.png

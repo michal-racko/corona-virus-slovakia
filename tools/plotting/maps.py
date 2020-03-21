@@ -59,7 +59,7 @@ class Map:
                   longitudes: np.ndarray,
                   latitudes: np.ndarray,
                   values: np.ndarray,
-                  precision=3000):
+                  precision=500):
         longitude_space = np.linspace(
             self.min_longitude,
             self.max_longitude,
@@ -138,6 +138,8 @@ class Map:
 
             pl.xticks(x_lin, np.around(lon_lin, 2))
             pl.yticks(y_lin, np.around(lat_lin, 2))
+
+        pl.tight_layout()
 
         if filepath is None:
             pl.show()

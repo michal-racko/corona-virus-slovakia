@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 
+from tools.config import Config
 from tools.simulation.virus import Virus
 
 
@@ -31,7 +32,9 @@ class PopulationBase:
     def __init__(self,
                  size: int,
                  virus: Virus,
-                 mean_periodic_interactions=1.5):
+                 infectious_start=3):
+        config = Config()
+
         self._size = size
         self._indexes = np.arange(size)
 
@@ -44,7 +47,10 @@ class PopulationBase:
         self._is_immune = np.zeros(size).astype(bool)
         self._is_alive = np.ones(size).astype(bool)
 
-        self._mean_periodic_interactions = mean_periodic_interactions
+        self._infectious_start = infectious_start
+
+        self._mean_stochastic_interactions = config.get('population', 'mean_stochastic_interactions')
+        self._mean_periodic_interactions = config.get('population', 'mean_periodic_interactions')
 
         self._virus = virus
 
@@ -65,7 +71,7 @@ class PopulationBase:
             int(current_time % (2 ** 32 - 1))
         )
 
-    def get_healt_states(self, n=None, random_seed=None) -> np.ndarray:
+    def get_health_states(self, n=None, random_seed=None) -> np.ndarray:
         """
         :param n:               subsample size (returns all members by default)
 
@@ -79,16 +85,19 @@ class PopulationBase:
         else:
             np.random.seed(random_seed)
 
-        current_ill = self._ill[self._is_alive]
+        current_infectious = self._ill[self._is_alive]
+        current_infectious[
+            self._day_i - self._illness_days_start[self._is_alive] < self._infectious_start
+        ] = False  # not yet infectious
 
         if n is None:
-            return current_ill
+            return current_infectious
 
-        elif n < len(current_ill):
-            return np.random.choice(current_ill, n, replace=False)
+        elif n < len(current_infectious):
+            return np.random.choice(current_infectious, n, replace=False)
 
         else:
-            return current_ill
+            return current_infectious
 
     def get_stochastic_interaction_multiplicities(self, n=None) -> np.ndarray:
         """
@@ -99,23 +108,20 @@ class PopulationBase:
         n_alive = self._is_alive.astype(int).sum()
 
         if n is None:
-            return np.random.negative_binomial(
-                self._virus.R,
-                self._virus.p,
+            return np.random.poisson(
+                self._mean_stochastic_interactions,
                 n_alive
             ).astype(int)
 
         elif n < n_alive:
-            return np.random.negative_binomial(
-                self._virus.R,
-                self._virus.p,
+            return np.random.poisson(
+                self._mean_stochastic_interactions,
                 n
             ).astype(int)
 
         else:
-            return np.random.negative_binomial(
-                self._virus.R,
-                self._virus.p,
+            return np.random.poisson(
+                self._mean_stochastic_interactions,
                 n_alive
             ).astype(int)
 
@@ -219,7 +225,7 @@ class PopulationBase:
         """
         Heals members of the population if they are infected
         """
-        healed = (self._day_i - self._illness_days_start) >= abs(
+        healed = (self._day_i - self._illness_days_start - self._infectious_start) >= abs(
             np.random.normal(
                 self._virus.illness_days_mean,
                 self._virus.illness_days_std,

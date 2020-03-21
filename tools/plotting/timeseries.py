@@ -3,10 +3,10 @@ import logging
 import matplotlib.pyplot as pl
 
 from tools.general import ensure_dir
-from tools.data_structure import SimulationResult
+from tools.data_structure import TimeSeriesResult
 
 
-def plot_pandemic(data: SimulationResult, filepath=None):
+def plot_pandemic(data: TimeSeriesResult, filepath=None):
     fig, (ax1, ax2, ax3) = pl.subplots(
         3,
         sharex=True,

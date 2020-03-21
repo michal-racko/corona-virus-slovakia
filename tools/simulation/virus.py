@@ -1,7 +1,11 @@
 import re
 import typing
+import logging
 
 from abc import ABCMeta, abstractmethod
+
+from tools.config import Config
+
 
 virus_type = typing.TypeVar('virus_type', bound='Virus')
 
@@ -12,19 +16,24 @@ class Virus:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,
-                 illness_days_mean: float,
-                 illness_days_std: float):
-        """
-        :param illness_days_mean:       Mean period for which a person is ill
+    def __init__(self):
+        self._config = Config()
 
-        :param illness_days_std:        Standard deviation of illness days
-        """
-        self.illness_days_mean = illness_days_mean
-        self.illness_days_std = illness_days_std
+        self.illness_days_mean = self._config.get('virus', 'infectious_days_mean')
+        self.illness_days_std = self._config.get('virus', 'infectious_days_std')
 
-        self.R = None
-        self.p = None
+        self.transmission_probability = self._config.get('virus', 'transmission_probability')
+
+        mean_periodic_interactions = self._config.get('population', 'mean_periodic_interactions')
+        mean_stochastic_interactions = self._config.get('population', 'mean_stochastic_interactions')
+
+        mean_interactions = mean_periodic_interactions + mean_stochastic_interactions
+
+        self.R = mean_interactions * self.illness_days_mean * self.transmission_probability
+
+        logging.info(
+            f'Initialized the {self.__class__.__name__} virus with R0={self.R:.4f}'
+        )
 
     @abstractmethod
     def get_mortality(self, **kwargs) -> float:
@@ -63,15 +72,9 @@ class Virus:
 
 class SARSCoV2(Virus):
     def __init__(self):
-        super().__init__(
-            illness_days_mean=6.5,
-            illness_days_std=1
-        )
+        super().__init__()
 
         self._mortality = 0.03
-
-        self.R = 2.4
-        self.p = 0.92
 
     def get_mortality(self, **kwargs) -> float:
         return self._mortality

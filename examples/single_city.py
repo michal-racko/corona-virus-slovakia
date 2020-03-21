@@ -1,17 +1,21 @@
 import logging
 
+from tools.config import Config
 from tools.simulation.virus import Virus
 from tools.simulation.population import PopulationBase
-from tools.data_structure import SimulationResult
+from tools.data_structure import TimeSeriesResult
 from tools.simulation.population_centre import PopulationCentreBase
 
 
-def run_simulation(virus_type: str,
-                   population_size: int,
-                   n_days: int) -> SimulationResult:
-    virus = Virus.from_string(virus_type)
+def run_simulation() -> TimeSeriesResult:
+    config = Config()
+
+    population_size = 450000
+    virus = Virus.from_string(config.get('virus', 'name'))
+    n_days = config.get('simulation_days')
 
     population_centre = PopulationCentreBase(
+        name='Mock city',
         longitude=17.1,
         latitude=48.15,
         populations=[PopulationBase(int(population_size / 10), virus) for i in range(10)],
@@ -26,8 +30,8 @@ def run_simulation(virus_type: str,
 
         population_centre.next_day()
 
-    return SimulationResult(
-        days=population_centre.simulation_days,
+    return TimeSeriesResult(
+        simulation_days=population_centre.simulation_days,
         infected=population_centre.infected,
         unaffected=population_centre.unaffected,
         immune=population_centre.immune,

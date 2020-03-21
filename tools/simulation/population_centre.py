@@ -17,9 +17,12 @@ class PopulationCentreBase:
                  latitude: float,
                  populations: List[PopulationBase],
                  virus: Virus,
+                 name: str,
                  random_seed=42):
         self.longitude = longitude
         self.latitude = latitude
+
+        self.name = name
 
         self._virus = virus
         self._populations = populations
@@ -72,13 +75,13 @@ class PopulationCentreBase:
         if n is None:
             for population in self._populations:
                 health_states.append(
-                    population.get_healt_states(random_seed=random_seed)
+                    population.get_health_states(random_seed=random_seed)
                 )
 
         else:
             for population in self._populations:
                 health_states.append(
-                    population.get_healt_states(
+                    population.get_health_states(
                         int(n * len(population) / len(self)),
                         random_seed=random_seed
                     )
@@ -96,11 +99,13 @@ class PopulationCentreBase:
         n_infected = 0
 
         for population in self._populations:
-            health_states = population.get_healt_states()
+            health_states = population.get_health_states()
             interaction_multiplicities = population.get_stochastic_interaction_multiplicities()
 
             for interaction_i in range(interaction_multiplicities.max()):
-                transmission_mask = (interaction_multiplicities > interaction_i)
+                transmission_mask = (interaction_multiplicities > interaction_i) * (
+                        np.random.random(len(interaction_multiplicities)) < self._virus.transmission_probability
+                )
 
                 n_infected += health_states[transmission_mask].astype(int).sum()
 
@@ -114,12 +119,12 @@ class PopulationCentreBase:
         n_infected = 0
 
         for population in self._populations:
-            health_states = population.get_healt_states(random_seed=self._random_seed)
+            health_states = population.get_health_states(random_seed=self._random_seed)
             interaction_multiplicities = population.get_periodic_interaction_multiplicities()
 
             for interaction_i in range(interaction_multiplicities.max()):
                 transmission_mask = (interaction_multiplicities > interaction_i) * (
-                        np.random.random(len(interaction_multiplicities)) < 0.25
+                        np.random.random(len(interaction_multiplicities)) < self._virus.transmission_probability
                 )
 
                 n_infected += health_states[transmission_mask].astype(int).sum()
@@ -181,6 +186,10 @@ class PopulationCentreBase:
 
     def to_dict(self) -> dict:
         return {
+            'name': self.name,
+            'size': len(self),
+            'longitude': self.longitude,
+            'latitude': self.latitude,
             'simulation_days': self.simulation_days,
             'unaffected': self.unaffected,
             'infected': self.infected,

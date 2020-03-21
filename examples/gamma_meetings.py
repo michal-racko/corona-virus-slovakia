@@ -2,7 +2,7 @@ import logging
 
 from tools.simulation.virus import Virus
 from tools.simulation.population import PopulationBase
-from tools.data_structure import SimulationResult
+from tools.data_structure import TimeSeriesResult
 
 """
 Simulates a single population whose members randomly meet each other each day.
@@ -16,7 +16,7 @@ def _shuffle_people(current_population: PopulationBase) -> PopulationBase:
 
     :returns:       Updated population
     """
-    health_states = current_population.get_healt_states()
+    health_states = current_population.get_health_states()
 
     interaction_multiplicities = current_population.get_stochastic_interaction_multiplicities()
 
@@ -32,7 +32,7 @@ def _shuffle_people(current_population: PopulationBase) -> PopulationBase:
 
 def run_simulation(virus_type: str,
                    population_size: int,
-                   n_days: int) -> SimulationResult:
+                   n_days: int) -> TimeSeriesResult:
     virus = Virus.from_string(virus_type)
     population = PopulationBase(population_size, virus)
 
@@ -66,8 +66,8 @@ def run_simulation(virus_type: str,
 
         population.next_day()
 
-    return SimulationResult(
-        days=days,
+    return TimeSeriesResult(
+        simulation_days=days,
         infected=infected_numbers,
         unaffected=unaffected_numbers,
         immune=immune_numbers,

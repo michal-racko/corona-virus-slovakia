@@ -1,6 +1,17 @@
 import os
 
 
+def singleton(class_):
+    instances = {}
+
+    def getinstance(*args, **kwargs):
+        if class_ not in instances:
+            instances[class_] = class_(*args, **kwargs)
+        return instances[class_]
+
+    return getinstance
+
+
 def ensure_dir(output_dir: str):
     """
     Checks whether all directories in <output_dir> exist and creates them if not.
