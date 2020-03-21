@@ -1,6 +1,6 @@
 import logging
 
-from tools.plotting import plot_pandemic
+from tools.plotting.basic import plot_pandemic
 from examples.multiple_cities import run_simulation
 
 
