@@ -1,7 +1,7 @@
 import json
 import numpy as np
 
-from typing import List
+from typing import List, Tuple
 
 from tools.simulation.virus import Virus
 from tools.simulation.population import PopulationBase
@@ -57,7 +57,7 @@ class PopulationCentreBase:
         """
         for population in self._populations:
             population.infect(
-                int(len(population) / len(self) * n_infected),
+                len(population) / len(self) * n_infected,
                 random_seed=random_seed
             )
 
@@ -88,6 +88,63 @@ class PopulationCentreBase:
                 )
 
         return np.concatenate(health_states)
+
+    def get_travelling(self, n=None, random_seed=None) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Returns health states and interaction multiplicities for selected individuals
+
+        :param n:               subsample size (returns all members by default)
+
+        :param random_seed:     random seed to be used for the random selection
+
+        :returns:               health_states, interaction_multiplicities
+        """
+        health_states = []
+        interaction_multiplicities = []
+
+        if n is None:
+            for population in self._populations:
+                health_states.append(
+                    population.get_health_states(random_seed=random_seed)
+                )
+
+                if random_seed is None:
+                    interaction_multiplicities.append(
+                        population.get_periodic_interaction_multiplicities(
+                            random_seed=random_seed
+                        )
+                    )
+
+                else:
+                    interaction_multiplicities.append(
+                        population.get_stochastic_interaction_multiplicities()
+                    )
+
+        else:
+            for population in self._populations:
+                health_states.append(
+                    population.get_health_states(
+                        int(n * len(population) / len(self)),
+                        random_seed=random_seed
+                    )
+                )
+
+                if random_seed is None:
+                    interaction_multiplicities.append(
+                        population.get_periodic_interaction_multiplicities(
+                            int(n * len(population) / len(self)),
+                            random_seed=random_seed
+                        )
+                    )
+
+                else:
+                    interaction_multiplicities.append(
+                        population.get_stochastic_interaction_multiplicities(
+                            int(n * len(population) / len(self))
+                        )
+                    )
+
+        return np.concatenate(health_states), np.concatenate(interaction_multiplicities)
 
     def _interact_stochastic(self):
         """

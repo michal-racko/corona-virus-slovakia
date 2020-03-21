@@ -2,9 +2,7 @@ import logging
 import argparse
 
 from tools.config import Config
-from tools.plotting.geographical import plot_final_mortality
-from tools.plotting.timeseries import plot_pandemic
-from examples.single_city import run_simulation
+from examples.multiple_cities import run_simulation
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,9 +48,3 @@ if __name__ == '__main__':
     logging.info(f'Saving results to: {results_file}')
 
     results.to_json(results_file)
-
-    plotting_file = config.get('plotting', 'pandemic_plot')
-
-    plot_pandemic(results, plotting_file)
-
-    # plot_final_mortality(results)

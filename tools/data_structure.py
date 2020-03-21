@@ -116,6 +116,25 @@ class GeographicalResult:
     def get_mortalities(self, day_i=-1, asratio=False) -> tuple:
         return self._get_parameter('dead', day_i, asratio)
 
+    @classmethod
+    def read_json(cls, filepath: str):
+        """
+        Loads data from a .json file
+        """
+        with open(filepath) as f:
+            _data = json.load(f)
+
+        instance = cls()
+
+        for city_name, city_data in _data.items():
+            city_data.update({
+                'name': city_name
+            })
+
+            instance.add_result(city_data)
+
+        return instance
+
     def to_json(self, filepath: str):
         """
         Saves results as a .json file to the given path

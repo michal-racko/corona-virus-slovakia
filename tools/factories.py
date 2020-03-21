@@ -1,46 +1,45 @@
-import pandas as pd
-
 from typing import List
 
+from tools.input_data import InputData
 from tools.simulation.virus import Virus
 from tools.simulation.population import PopulationBase
 from tools.simulation.population_centre import PopulationCentreBase
 
 
-def city_factory(city_filepath: str, virus: Virus) -> List[PopulationCentreBase]:
+def city_factory(virus: Virus) -> List[PopulationCentreBase]:
     """
     Prepares cities based on the given csv file.
     Expected csv structure:
         <city:str>,<population: int>, <longitude: float>, <latitude: float>, <infected: int>
         (column order does not matter)
 
-    :param city_filepath:       path to the csv file with cities
-
     :param virus:               desired virus type
 
     :return:                    instances of PopulationCentreBase ready for a simulation
     """
-    city_df = pd.read_csv(city_filepath)
+    input_data = InputData()
 
     cities = []
 
-    for _, _data in city_df.iterrows():
-        city_data = _data.to_dict()
-
+    for name, population, long, lat, infected in zip(input_data.get_city_names(),
+                                                     input_data.get_population_sizes(),
+                                                     input_data.get_longitudes(),
+                                                     input_data.get_latitudes(),
+                                                     input_data.get_infected()):
         populations = [
-            PopulationBase(int(city_data['population'] / 10), virus) for i in range(10)
+            PopulationBase(int(population / 10), virus) for i in range(10)
         ]
 
         current_city = PopulationCentreBase(
-            name=city_data['city'],
-            longitude=city_data['longitude'],
-            latitude=city_data['latitude'],
+            name=name,
+            longitude=long,
+            latitude=lat,
             populations=populations,
             virus=virus
         )
 
-        if city_data['infected'] != 0:
-            current_city.infect(city_data['infected'])
+        if infected != 0:
+            current_city.infect(infected)
 
         cities.append(current_city)
 

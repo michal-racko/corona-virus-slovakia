@@ -1,11 +1,12 @@
 # === Simulation parameters ===
 
+min_inhabitants: 50000
 simulation_days: 120
 n_processes: 12
 
 population:
   mean_periodic_interactions: 2
-  mean_stochastic_interactions: 15
+  mean_stochastic_interactions: 20
 
 # === Parameters of the virus ===
 
@@ -17,11 +18,10 @@ virus:
 
 # === inputs ===
 
-city_csv: data/slovak_counties.csv
+migration_matrix: data/sensitive/OD_final.pickle
+populations_file: data/sensitive/munic_pop.xlsx
+town_locations_file: data/sensitive/obce1.xlsx
 
 # === outputs ===
 
 result_file: results/single-city.json
-
-plotting:
-  pandemic_plot: plots/single-city.png

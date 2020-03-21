@@ -183,7 +183,7 @@ class PopulationBase:
         """
         return int((~self._is_alive).astype(int).sum())
 
-    def infect(self, n: int, random_seed=None):
+    def infect(self, n: float, random_seed=None):
         """
         Infects n randomly selected people
         """
@@ -196,10 +196,15 @@ class PopulationBase:
         infectable = self._indexes.copy()
         infectable[self._is_immune * ~self._is_alive] = -1
 
-        if n < self._size:
+        true_n = int(n)
+
+        if n % 1 >= np.random.random():
+            true_n += 1
+
+        if true_n < self._size:
             indexes = np.random.choice(
                 infectable,
-                n
+                true_n
             )
 
         else:

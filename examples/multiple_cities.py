@@ -3,64 +3,50 @@ import logging
 import numpy as np
 
 from tools.config import Config
+from tools.input_data import InputData
 from tools.factories import city_factory
 from tools.simulation.virus import Virus
 from tools.data_structure import GeographicalResult
 
 
-def wander_aroud(city_indexes, cities):
-    """
-    Simulates people travelling among cities. Uses a single CPU core.
-    """
-    for i in city_indexes:
-        for j, city_j in enumerate(cities):
-            city_i = cities[i]
-
-            distance = np.sqrt(
-                (city_i.longitude - city_j.longitude) ** 2 + (city_i.latitude - city_j.latitude) ** 2
-            )
-
-            if distance == 0:
-                continue
-
-            travelling = min(len(city_i), len(city_j)) / (distance * 3) ** 2
-
-            health_states = city_i.get_health_states(travelling)
-
-            n_infected = health_states.astype(int).sum()
-
-            city_j.infect(n_infected)
-
-
 def run_simulation() -> GeographicalResult:
     config = Config()
 
-    virus = Virus.from_string(config.get('virus'))
-    city_csv = config.get('city_csv')
+    virus = Virus.from_string(config.get('virus', 'name'))
     n_days = config.get('simulation_days')
 
-    cities = city_factory(city_csv, virus)
+    cities = city_factory(virus)
 
     results = GeographicalResult()
 
     cities[5].infect(50)
 
+    input_data = InputData()
+
     for day_i in range(n_days):
         if day_i % 10 == 0:
             logging.info(f'day: {day_i}')
 
-        for city_i in cities:
-            for city_j in cities:
-                distance = np.sqrt(
-                    (city_i.longitude - city_j.longitude) ** 2 + (city_i.latitude - city_j.latitude) ** 2
-                )
+        for i, city_i in enumerate(cities):
+            migrations_smeared = np.random.poisson(input_data.get_migration_row(i))
 
-                if distance == 0:
+            for j, city_j in enumerate(cities):
+                if i == j:
                     continue
 
-                travelling = min(len(city_i), len(city_j)) / (distance * 3) ** 2
+                health_states, interaction_multiplicities = city_i.get_travelling(migrations_smeared[j])
 
-                health_states = city_i.get_health_states(travelling)
+                if len(interaction_multiplicities) == 0:
+                    continue
+
+                n_infected = 0
+
+                for interaction_i in range(interaction_multiplicities.max()):
+                    transmission_mask = (interaction_multiplicities > interaction_i) * (
+                            np.random.random(len(interaction_multiplicities)) < virus.transmission_probability
+                    )
+
+                    n_infected += health_states[transmission_mask].astype(int).sum()
 
                 n_infected = health_states.astype(int).sum()
 

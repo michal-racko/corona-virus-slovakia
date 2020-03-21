@@ -1,0 +1,16 @@
+input_data: results/single-city.json
+
+
+individual_cities:
+  dir: plots/individual
+  cities:
+    - Martin
+    - Nitra
+    - Trenčín
+    - Trnava
+    - Banská Bystrica
+    - Žilina
+    - Poprad
+    - Prešov
+    - Bratislava-Ružinov
+    - Bratislava-Petržalka
