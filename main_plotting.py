@@ -1,9 +1,12 @@
 import logging
 import argparse
 
+from multiprocessing import Pool
+
 from tools.config import Config
 from tools.data_structure import GeographicalResult
 from tools.plotting.timeseries import plot_pandemic
+from tools.plotting.geographical import plot_infected
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,12 +36,29 @@ try:
 except TypeError:
     config.read(DEFAULT_CONFIG_PATH)
 
+
+# def plot_geto_data(day_i):
+#     day_string = f'{day_i}'.zfill(3)
+#
+#     plot_infected(
+#         data,
+#         day_i=day_i,
+#         filepath=f'{geo_timeseries_dir}/infected/{day_string}.png'
+#     )
+
+
 if __name__ == '__main__':
     logging.info('Plotting simulation results')
 
     data = GeographicalResult.read_json(
         config.get('result_file')
     )
+
+    geo_timeseries_dir = config.get('geographical', 'timeseries_dir')
+
+    # pool = Pool(config.get('n_processes'))
+    #
+    # pool.map(plot_geto_data, [i for i in range(360)])
 
     individual_city_dir = config.get('individual_cities', 'dir')
 
@@ -54,3 +74,8 @@ if __name__ == '__main__':
             city_data,
             f'{individual_city_dir}/{city_name}.png'
         )
+
+    plot_pandemic(
+        data.get_total_timeseries(),
+        f'{individual_city_dir}/total.png'
+    )

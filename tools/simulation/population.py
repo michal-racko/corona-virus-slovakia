@@ -31,8 +31,7 @@ class PopulationBase:
 
     def __init__(self,
                  size: int,
-                 virus: Virus,
-                 infectious_start=3):
+                 virus: Virus):
         config = Config()
 
         self._size = size
@@ -42,12 +41,24 @@ class PopulationBase:
         self._illness_days = np.ones(size) * -1
         self._illness_days_start = np.ones(size) * -1
 
+        self._health_condition = np.random.random(size)
+        self._need_hospitalization = np.zeros(size).astype(bool)
+
+        self._hospitalization_start = np.random.poisson(
+            config.get('hospitalization_start'),
+            size
+        )
+        self._hospitalization_percentage = config.get('hospitalization_percentage')
+
         self._is_new_case = np.zeros(size).astype(bool)
 
         self._is_immune = np.zeros(size).astype(bool)
         self._is_alive = np.ones(size).astype(bool)
 
-        self._infectious_start = infectious_start
+        self._infectious_start = np.random.poisson(
+            config.get('infectious_start'),
+            size
+        )
 
         self._mean_stochastic_interactions = config.get('population', 'mean_stochastic_interactions')
         self._mean_periodic_interactions = config.get('population', 'mean_periodic_interactions')
@@ -87,8 +98,8 @@ class PopulationBase:
 
         current_infectious = self._ill[self._is_alive]
         current_infectious[
-            self._day_i - self._illness_days_start[self._is_alive] < self._infectious_start
-        ] = False  # not yet infectious
+            self._day_i - self._illness_days_start[self._is_alive] < self._infectious_start[self._is_alive]
+            ] = False  # not yet infectious
 
         if n is None:
             return current_infectious
@@ -183,6 +194,12 @@ class PopulationBase:
         """
         return int((~self._is_alive).astype(int).sum())
 
+    def get_n_hospitalized(self) -> int:
+        """
+        :returns:       number of members who are currently need hospitalization
+        """
+        return int(self._need_hospitalization.astype(int).sum())
+
     def infect(self, n: float, random_seed=None):
         """
         Infects n randomly selected people
@@ -226,6 +243,10 @@ class PopulationBase:
 
         self._is_new_case = self._illness_days_start == self._day_i
 
+        self._need_hospitalization = self._ill * \
+                                     (self._health_condition <= self._hospitalization_percentage) * \
+                                     (self._hospitalization_start >= (self._day_i - self._illness_days_start))
+
     def heal(self):
         """
         Heals members of the population if they are infected
@@ -243,6 +264,8 @@ class PopulationBase:
         self._ill[healed] = False
         self._illness_days[healed] = self._day_i - self._illness_days_start[healed]
 
+        self._need_hospitalization[immune] = False
+
         self._is_immune[immune] = True
 
     def kill(self):
@@ -253,12 +276,19 @@ class PopulationBase:
 
         ill_alive = (self._ill * self._is_alive).copy()
 
-        self._is_alive[ill_alive] = np.random.random(
+        passed_away = np.random.random(
             ill_alive.astype(int).sum()
         ) > daily_prob
+
+        self._is_alive[ill_alive] = passed_away
+
+        self._need_hospitalization[ill_alive] *= passed_away
 
     def next_day(self):
         """
         Next day of the simulation
         """
         self._day_i += 1
+
+        # if self._day_i == 90:
+        #     self._mean_stochastic_interactions = 18

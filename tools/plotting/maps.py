@@ -8,6 +8,7 @@ from abc import ABCMeta
 from scipy import spatial
 from matplotlib.path import Path
 
+from tools.config import Config
 from tools.general import ensure_dir
 
 
@@ -15,6 +16,10 @@ class Map:
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        self._config = Config()
+
+        self._precision = self._config.get('geographical', 'precision', default=500)
+
         self.max_longitude = None
         self.min_longitude = None
 
@@ -94,6 +99,8 @@ class Map:
                   filepath=None,
                   cmap='gnuplot',
                   alpha=0.7,
+                  values_range=None,
+                  title=None,
                   hide_ticks=True,
                   show_coords=True):
         """
@@ -124,7 +131,18 @@ class Map:
             Y = np.ma.masked_array(Y, ~mask)
             Z = np.ma.masked_array(Z, ~mask)
 
-        ax1.contourf(X, Y, Z, alpha=alpha, cmap=cmap)
+        if values_range is None:
+            vmin = min(values)
+            vmax = max(values)
+
+        else:
+            vmin = values_range[0]
+            vmax = values_range[1]
+
+        cf = ax1.contourf(X, Y, Z, alpha=alpha, cmap=cmap, vmin=vmin, vmax=vmax)
+        cbar = fig.colorbar(cf, ax=ax1)
+
+        cbar.set_clim(vmin, vmax)
 
         if hide_ticks:
             pl.xticks([])
@@ -140,6 +158,9 @@ class Map:
             pl.yticks(y_lin, np.around(lat_lin, 2))
 
         pl.tight_layout()
+
+        if title is not None:
+            pl.title(title, fontsize=18)
 
         if filepath is None:
             pl.show()

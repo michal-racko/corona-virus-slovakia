@@ -19,8 +19,6 @@ def run_simulation() -> GeographicalResult:
 
     results = GeographicalResult()
 
-    cities[5].infect(50)
-
     input_data = InputData()
 
     for day_i in range(n_days):

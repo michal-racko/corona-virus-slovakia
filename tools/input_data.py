@@ -1,4 +1,5 @@
 import pickle
+import logging
 
 import numpy as np
 import pandas as pd
@@ -15,7 +16,7 @@ class InputData:
         self._municipal_df = self._prepare_municipal_df()
 
         with open(self._config.get('migration_matrix'), 'rb') as f:
-            self.migration_matrix = pickle.load(f)
+            self._migration_matrix = pickle.load(f)
 
         min_inhabitants = self._config.get('min_inhabitants')
 
@@ -24,7 +25,27 @@ class InputData:
         population_size_mask = inhabitants > min_inhabitants
 
         self._municipal_df = self._municipal_df.loc[population_size_mask]
-        self.migration_matrix = self.migration_matrix[population_size_mask].T[population_size_mask].T
+        self._migration_matrix = self._migration_matrix[population_size_mask].T[population_size_mask].T
+
+        logging.info(f'Municipal data preview:\n {self._municipal_df}')
+
+        self.mean_travel_ratio = self._get_mean_travel_ratio()
+
+    def _get_mean_travel_ratio(self) -> float:
+        """
+        :returns:       Ratio of mean number of daily travelling people
+                        to the full population size
+        """
+        total_meetings = 0
+
+        for i in range(len(self._migration_matrix)):
+            for j in range(len(self._migration_matrix)):
+                if i == j:
+                    continue
+
+                total_meetings += self._migration_matrix[i][j]
+
+        return total_meetings / self._municipal_df.popul.sum()
 
     def get_population_sizes(self) -> np.ndarray:
         return self._municipal_df.popul.values
@@ -48,10 +69,10 @@ class InputData:
 
         :returns:       mean number of people who daily travel between city i and j
         """
-        return int(self.migration_matrix[i][j])
+        return int(self._migration_matrix[i][j])
 
     def get_migration_row(self, i) -> np.ndarray:
-        return self.migration_matrix[i]
+        return self._migration_matrix[i]
 
     def get_migration_by_names(self, city_name_a: str, city_name_b: str) -> int:
         city_names = self.get_city_names()

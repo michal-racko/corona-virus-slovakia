@@ -41,6 +41,7 @@ class PopulationCentreBase:
         self.immune = []
         self.dead = []
         self.new_cases = []
+        self.hospitalized = []
 
         self._day_i = 0
 
@@ -194,6 +195,7 @@ class PopulationCentreBase:
         n_immune = 0
         n_dead = 0
         n_new_cases = 0
+        n_hospitalized = 0
 
         for population in self._populations:
             n_unaffected += population.get_n_unaffected()
@@ -201,12 +203,14 @@ class PopulationCentreBase:
             n_new_cases += population.get_n_new_cases()
             n_immune += population.get_n_immune()
             n_dead += population.get_n_dead()
+            n_hospitalized += population.get_n_hospitalized()
 
         self.unaffected.append(n_unaffected)
         self.infected.append(n_infected)
         self.immune.append(n_immune)
         self.dead.append(n_dead)
         self.new_cases.append(n_new_cases)
+        self.hospitalized.append(n_hospitalized)
 
         self.simulation_days.append(self._day_i)
 
@@ -252,7 +256,8 @@ class PopulationCentreBase:
             'infected': self.infected,
             'immune': self.immune,
             'dead': self.dead,
-            'new_cases': self.new_cases
+            'new_cases': self.new_cases,
+            'hospitalized': self.hospitalized
         }
 
     def to_json(self, filepath: str):

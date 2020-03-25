@@ -5,7 +5,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from tools.config import Config
-
+from tools.input_data import InputData
 
 virus_type = typing.TypeVar('virus_type', bound='Virus')
 
@@ -26,20 +26,22 @@ class Virus:
 
         self.transmission_probability = self._config.get('virus', 'transmission_probability')
 
+        self.asymptomatic_ratio = asymptomatic_ratio
+        self.hospitalized_ratio = hospitalized_ratio
+        self.mild_symptoms_ratio = 1 - hospitalized_ratio - asymptomatic_ratio
+        input_data = InputData()
+
         mean_periodic_interactions = self._config.get('population', 'mean_periodic_interactions')
         mean_stochastic_interactions = self._config.get('population', 'mean_stochastic_interactions')
 
         mean_interactions = mean_periodic_interactions + mean_stochastic_interactions
 
-        self.R = mean_interactions * self.illness_days_mean * self.transmission_probability
+        self.R = (1 + input_data.mean_travel_ratio) * \
+                 mean_interactions * self.illness_days_mean * self.transmission_probability
 
         logging.info(
             f'Initialized the {self.__class__.__name__} virus with R0={self.R:.4f}'
         )
-
-        self.asymptomatic_ratio = asymptomatic_ratio
-        self.hospitalized_ratio = hospitalized_ratio
-        self.mild_symptoms_ratio = 1 - hospitalized_ratio - asymptomatic_ratio
 
     @abstractmethod
     def get_mortality(self, **kwargs) -> float:

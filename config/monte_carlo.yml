@@ -1,12 +1,12 @@
 # === Simulation parameters ===
 
-min_inhabitants: 50000
-simulation_days: 120
+min_inhabitants: 20000
+simulation_days: 160
 n_processes: 12
 
 population:
   mean_periodic_interactions: 2
-  mean_stochastic_interactions: 20
+  mean_stochastic_interactions: 12
 
 # === Parameters of the virus ===
 
@@ -16,6 +16,16 @@ virus:
   infectious_days_mean: 6.5
   infectious_days_std: 1
 
+# mean time after which a person who contracted the virus
+# starts being infectious
+infectious_start: 5
+
+# mean time after which a person who contracted the virus
+# starts needing hospitalization
+hospitalization_start: 10
+
+hospitalization_percentage: 0.1
+
 # === inputs ===
 
 migration_matrix: data/sensitive/OD_final.pickle
@@ -24,12 +34,12 @@ town_locations_file: data/sensitive/obce1.xlsx
 
 # === outputs ===
 
-result_file: results/single-city.json
+result_file: results/cities-20000-12.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/individual
+  dir: plots/individual-20000-12
   cities:
     - Martin
     - Nitra
@@ -41,3 +51,8 @@ individual_cities:
     - Prešov
     - Bratislava-Ružinov
     - Bratislava-Petržalka
+
+geographical:
+  precision: 500
+  timeseries_dir:
+    plots/geographical/timeseries-20000-12
