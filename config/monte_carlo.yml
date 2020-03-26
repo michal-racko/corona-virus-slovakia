@@ -6,7 +6,7 @@ n_processes: 12
 
 population:
   mean_periodic_interactions: 2
-  mean_stochastic_interactions: 12
+  mean_stochastic_interactions: 18
 
 # === Parameters of the virus ===
 
@@ -34,12 +34,12 @@ town_locations_file: data/sensitive/obce1.xlsx
 
 # === outputs ===
 
-result_file: results/cities-20000-12.json
+result_file: results/cities-20000-18.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/individual-20000-12
+  dir: plots/individual-20000-18
   cities:
     - Martin
     - Nitra
@@ -55,4 +55,4 @@ individual_cities:
 geographical:
   precision: 500
   timeseries_dir:
-    plots/geographical/timeseries-20000-12
+    plots/geographical/timeseries-20000-18

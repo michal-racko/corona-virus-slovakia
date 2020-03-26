@@ -3,7 +3,6 @@ import numpy as np
 
 from typing import List, Tuple
 
-from tools.simulation.virus import Virus
 from tools.simulation.population import PopulationBase
 
 
@@ -16,7 +15,7 @@ class PopulationCentreBase:
                  longitude: float,
                  latitude: float,
                  populations: List[PopulationBase],
-                 virus: Virus,
+                 virus,
                  name: str,
                  random_seed=42):
         self.longitude = longitude

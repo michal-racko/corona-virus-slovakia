@@ -2,9 +2,6 @@ import time
 
 import numpy as np
 
-from tools.config import Config
-from tools.simulation.virus import Virus
-
 
 class PopulationBase:
     """
@@ -31,9 +28,12 @@ class PopulationBase:
 
     def __init__(self,
                  size: int,
-                 virus: Virus):
-        config = Config()
-
+                 virus,
+                 hospitalization_start,
+                 hospitalization_percentage,
+                 infectious_start,
+                 mean_stochastic_interactions,
+                 mean_periodic_interactions):
         self._size = size
         self._indexes = np.arange(size)
 
@@ -45,10 +45,10 @@ class PopulationBase:
         self._need_hospitalization = np.zeros(size).astype(bool)
 
         self._hospitalization_start = np.random.poisson(
-            config.get('hospitalization_start'),
+            hospitalization_start,
             size
         )
-        self._hospitalization_percentage = config.get('hospitalization_percentage')
+        self._hospitalization_percentage = hospitalization_percentage
 
         self._is_new_case = np.zeros(size).astype(bool)
 
@@ -56,12 +56,12 @@ class PopulationBase:
         self._is_alive = np.ones(size).astype(bool)
 
         self._infectious_start = np.random.poisson(
-            config.get('infectious_start'),
+            infectious_start,
             size
         )
 
-        self._mean_stochastic_interactions = config.get('population', 'mean_stochastic_interactions')
-        self._mean_periodic_interactions = config.get('population', 'mean_periodic_interactions')
+        self._mean_stochastic_interactions = mean_stochastic_interactions
+        self._mean_periodic_interactions = mean_periodic_interactions
 
         self._virus = virus
 
@@ -211,7 +211,7 @@ class PopulationBase:
             np.random.seed(random_seed)
 
         infectable = self._indexes.copy()
-        infectable[self._is_immune * ~self._is_alive] = -1
+        infectable[self._is_immune + ~self._is_alive] = -1
 
         true_n = int(n)
 
@@ -289,6 +289,3 @@ class PopulationBase:
         Next day of the simulation
         """
         self._day_i += 1
-
-        # if self._day_i == 90:
-        #     self._mean_stochastic_interactions = 18
