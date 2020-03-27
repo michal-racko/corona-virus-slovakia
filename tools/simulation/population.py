@@ -258,7 +258,7 @@ class PopulationBase:
 
         self._illness_days_start[citizen_index] = self._day_i
         self._ill[citizen_index] = True
-        self._is_new_case = True
+        self._is_new_case[citizen_index] = True
 
     def heal(self):
         """

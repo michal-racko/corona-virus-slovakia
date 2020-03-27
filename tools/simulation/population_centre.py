@@ -1,5 +1,6 @@
 import json
 import numpy as np
+from math import sqrt
 
 from typing import List, Tuple
 
@@ -77,29 +78,31 @@ class PopulationCentreBase:
             pop_ind_for_households_fill = np.append(  pop_ind_for_households_fill,
                                                                     np.full((len(self._populations[i])),i, dtype=int)
                                                                     )
-        pop_ind_for_households_fill = np.random.shuffle(pop_ind_for_households_fill)
+        np.random.shuffle(pop_ind_for_households_fill)
 
-        number_of_household_inhabitants = np.random.poisson(average_persons_per_household, 2*len(self._households))
+        number_of_household_inhabitants = np.random.poisson(average_persons_per_household, int(1.2*people_total/average_persons_per_household + 20*sqrt(people_total/average_persons_per_household)))
         sum_households = 0
         for i in range(len(number_of_household_inhabitants)):
-            sum_housholds += number_of_household_inhabitants[i]
+            sum_households += number_of_household_inhabitants[i]
             # adjust number of people in the last household, remove empty households and break
             if (sum_households >= people_total):
-                number_of_household_inhabitants[i] -= sum_housholds - people_total
-                number_of_household_inhabitants = number_of_household_inhabitants[0, i, 1]
+                number_of_household_inhabitants[i] -= sum_households - people_total
+                number_of_household_inhabitants = number_of_household_inhabitants[0: i: 1]
                 break
 
-        self._households = np.empty((len(number_of_household_inhabitants)), Household)
+        self._households = np.empty((len(number_of_household_inhabitants)), dtype=Household)
 
         man_to_be_added_from_population = np.zeros((len(self._populations)), dtype=int)
         i = 0 # index of person
         for h_index in range(0,len(self._households)):
+            self._households[h_index] = Household()
             for j in range(number_of_household_inhabitants[h_index]):
+                if (man_to_be_added_from_population[pop_ind_for_households_fill[i]] >= self._populations[pop_ind_for_households_fill[i]]._size):
+                    print("something is wrong: " + str(man_to_be_added_from_population[pop_ind_for_households_fill[i]]) + "//" + str(self._populations[pop_ind_for_households_fill[i]]._size))
                 self._households[h_index].add_inhabitant(   pop_ind_for_households_fill[i], 
                                                             man_to_be_added_from_population[pop_ind_for_households_fill[i]] )
-                i += 1
                 man_to_be_added_from_population[pop_ind_for_households_fill[i]] += 1
-
+                i += 1
 
     def infect(self, n_infected: int, random_seed=None):
         """
@@ -244,7 +247,7 @@ class PopulationCentreBase:
 
     def _simulate_spread_in_households(self):
         for household in self._households:
-            household._simulate_spread_in_household(0.2, self._populations)
+            household.simulate_daily_spread_in_household(0.2, self._populations)
 
 
     def _log_data(self):

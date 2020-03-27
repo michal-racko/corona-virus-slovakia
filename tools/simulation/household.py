@@ -21,16 +21,16 @@ class Household:
         Creates empty household
         """
         self.n_inhabitants = 0
-        self.population_index = empty((0), dtype=int)
-        self.citizen_index    = empty((0), dtype=int)
+        self.population_index = np.empty((0), dtype=int)
+        self.citizen_index    = np.empty((0), dtype=int)
 
 
     def add_inhabitant(self,
                       population_index: int,
                       citizen_index: int):
-        self.population_index = np.append(self.population_index, numpy.array[pupulation_index], axis = 0)
-        self.citizen_index    = np.append(self.citizen_index   , numpy.array[citizen_index]   , axis = 0)
-        n_inhabitants += 1
+        self.population_index = np.append(self.population_index, np.array([population_index]), axis = 0)
+        self.citizen_index    = np.append(self.citizen_index   , np.array([citizen_index])   , axis = 0)
+        self.n_inhabitants += 1
 
     def simulate_daily_spread_in_household( self,
                                             transmition_prob : float,
@@ -59,4 +59,4 @@ class Household:
                 if i == j:
                     continue
                 if infection_mask[j]:
-                    populations[self.population_index[j]].infect_particular_citizen(self.citizen_index[j])      
+                    populations[self.population_index[j]].infect_particular_citizen(self.citizen_index[j])
