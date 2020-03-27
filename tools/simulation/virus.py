@@ -4,7 +4,6 @@ import logging
 
 from abc import ABCMeta, abstractmethod
 
-from tools.config import Config
 from tools.input_data import InputData
 
 virus_type = typing.TypeVar('virus_type', bound='Virus')
@@ -18,21 +17,24 @@ class Virus:
 
     def __init__(self,
                  asymptomatic_ratio: float,
-                 hospitalized_ratio: float):
-        self._config = Config()
+                 hospitalized_ratio: float,
+                 illness_days_mean,
+                 illness_days_std,
+                 transmission_probability,
+                 mean_periodic_interactions,
+                 mean_stochastic_interactions):
+        self.illness_days_mean = illness_days_mean
+        self.illness_days_std = illness_days_std
 
-        self.illness_days_mean = self._config.get('virus', 'infectious_days_mean')
-        self.illness_days_std = self._config.get('virus', 'infectious_days_std')
-
-        self.transmission_probability = self._config.get('virus', 'transmission_probability')
+        self.transmission_probability = transmission_probability
 
         self.asymptomatic_ratio = asymptomatic_ratio
         self.hospitalized_ratio = hospitalized_ratio
         self.mild_symptoms_ratio = 1 - hospitalized_ratio - asymptomatic_ratio
         input_data = InputData()
 
-        mean_periodic_interactions = self._config.get('population', 'mean_periodic_interactions')
-        mean_stochastic_interactions = self._config.get('population', 'mean_stochastic_interactions')
+        mean_periodic_interactions = mean_periodic_interactions
+        mean_stochastic_interactions = mean_stochastic_interactions
 
         mean_interactions = mean_periodic_interactions + mean_stochastic_interactions
 
@@ -79,10 +81,20 @@ class Virus:
 
 
 class SARSCoV2(Virus):
-    def __init__(self):
+    def __init__(self,
+                 illness_days_mean,
+                 illness_days_std,
+                 transmission_probability,
+                 mean_periodic_interactions,
+                 mean_stochastic_interactions):
         super().__init__(
             asymptomatic_ratio=0.4,
-            hospitalized_ratio=0.1
+            hospitalized_ratio=0.1,
+            illness_days_mean=illness_days_mean,
+            illness_days_std=illness_days_std,
+            transmission_probability=transmission_probability,
+            mean_periodic_interactions=mean_periodic_interactions,
+            mean_stochastic_interactions=mean_stochastic_interactions
         )
 
         self._mortality = 0.03

@@ -16,7 +16,7 @@ class InputData:
         self._municipal_df = self._prepare_municipal_df()
 
         with open(self._config.get('migration_matrix'), 'rb') as f:
-            self._migration_matrix = pickle.load(f)
+            self.migration_matrix = pickle.load(f)
 
         min_inhabitants = self._config.get('min_inhabitants')
 
@@ -25,7 +25,7 @@ class InputData:
         population_size_mask = inhabitants > min_inhabitants
 
         self._municipal_df = self._municipal_df.loc[population_size_mask]
-        self._migration_matrix = self._migration_matrix[population_size_mask].T[population_size_mask].T
+        self.migration_matrix = self.migration_matrix[population_size_mask].T[population_size_mask].T
 
         logging.info(f'Municipal data preview:\n {self._municipal_df}')
 
@@ -38,12 +38,12 @@ class InputData:
         """
         total_meetings = 0
 
-        for i in range(len(self._migration_matrix)):
-            for j in range(len(self._migration_matrix)):
+        for i in range(len(self.migration_matrix)):
+            for j in range(len(self.migration_matrix)):
                 if i == j:
                     continue
 
-                total_meetings += self._migration_matrix[i][j]
+                total_meetings += self.migration_matrix[i][j]
 
         return total_meetings / self._municipal_df.popul.sum()
 
@@ -69,10 +69,10 @@ class InputData:
 
         :returns:       mean number of people who daily travel between city i and j
         """
-        return int(self._migration_matrix[i][j])
+        return int(self.migration_matrix[i][j])
 
     def get_migration_row(self, i) -> np.ndarray:
-        return self._migration_matrix[i]
+        return self.migration_matrix[i]
 
     def get_migration_by_names(self, city_name_a: str, city_name_b: str) -> int:
         city_names = self.get_city_names()

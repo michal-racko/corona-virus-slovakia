@@ -12,7 +12,14 @@ from tools.data_structure import TimeSeriesResult
 def plot_pandemic(data: TimeSeriesResult, filepath=None):
     config = Config()
 
-    virus = Virus.from_string(config.get('virus', 'name'))
+    virus = Virus.from_string(
+        config.get('virus', 'name'),
+        illness_days_mean=config.get('virus', 'infectious_days_mean'),
+        illness_days_std=config.get('virus', 'infectious_days_std'),
+        transmission_probability=config.get('virus', 'transmission_probability'),
+        mean_periodic_interactions=config.get('virus', 'infectious_days_mean'),
+        mean_stochastic_interactions=config.get('virus', 'infectious_days_mean')
+    )
 
     fig, (ax1, ax2, ax3) = pl.subplots(
         3,

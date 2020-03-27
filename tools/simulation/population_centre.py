@@ -4,7 +4,6 @@ from math import sqrt
 
 from typing import List, Tuple
 
-from tools.simulation.virus import Virus
 from tools.simulation.population import PopulationBase
 from tools.simulation.household import Household
 
@@ -18,7 +17,7 @@ class PopulationCentreBase:
                  longitude: float,
                  latitude: float,
                  populations: List[PopulationBase],
-                 virus: Virus,
+                 virus,
                  name: str,
                  random_seed=42):
         self.longitude = longitude

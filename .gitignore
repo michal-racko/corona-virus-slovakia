@@ -11,3 +11,5 @@ data/sensitive
 test*
 
 Figure*
+
+config/monte_carlo.yml
