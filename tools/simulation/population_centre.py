@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 from tools.simulation.virus import Virus
 from tools.simulation.population import PopulationBase
+from tools.simulation.household import Household
 
 
 class PopulationCentreBase:
@@ -34,6 +35,8 @@ class PopulationCentreBase:
         for population in populations:
             self._size += len(population)
 
+        self._households = np.empty((0), Household)
+
         self.simulation_days = []
 
         self.infected = []
@@ -45,8 +48,58 @@ class PopulationCentreBase:
 
         self._day_i = 0
 
+        self._create_and_fill_households()
+
     def __len__(self):
         return self._size
+
+    def get_number_of_inhabitants(self) -> int:
+        """
+        return number of people living in the population centre
+        """
+        people_total = 0
+        for population in self._populations:
+            people_total += population._size
+        return people_total
+        
+    def _create_and_fill_households(self,
+                                    average_persons_per_household = 3
+                                    ):
+        """
+        Create households with poisson distribution of inhabitants.
+        Assing people from all populations randomly to these households.
+        """
+
+        people_total = self.get_number_of_inhabitants()
+
+        pop_ind_for_households_fill = np.zeros(len(self._populations[0]), dtype=int)
+        for i in range(1, len(self._populations)):
+            pop_ind_for_households_fill = np.append(  pop_ind_for_households_fill,
+                                                                    np.full((len(self._populations[i])),i, dtype=int)
+                                                                    )
+        pop_ind_for_households_fill = np.random.shuffle(pop_ind_for_households_fill)
+
+        number_of_household_inhabitants = np.random.poisson(average_persons_per_household, 2*len(self._households))
+        sum_households = 0
+        for i in range(len(number_of_household_inhabitants)):
+            sum_housholds += number_of_household_inhabitants[i]
+            # adjust number of people in the last household, remove empty households and break
+            if (sum_households >= people_total):
+                number_of_household_inhabitants[i] -= sum_housholds - people_total
+                number_of_household_inhabitants = number_of_household_inhabitants[0, i, 1]
+                break
+
+        self._households = np.empty((len(number_of_household_inhabitants)), Household)
+
+        man_to_be_added_from_population = np.zeros((len(self._populations)), dtype=int)
+        i = 0 # index of person
+        for h_index in range(0,len(self._households)):
+            for j in range(number_of_household_inhabitants[h_index]):
+                self._households[h_index].add_inhabitant(   pop_ind_for_households_fill[i], 
+                                                            man_to_be_added_from_population[pop_ind_for_households_fill[i]] )
+                i += 1
+                man_to_be_added_from_population[pop_ind_for_households_fill[i]] += 1
+
 
     def infect(self, n_infected: int, random_seed=None):
         """
@@ -189,6 +242,11 @@ class PopulationCentreBase:
 
         self.infect(n_infected, random_seed=self._random_seed)
 
+    def _simulate_spread_in_households(self):
+        for household in self._households:
+            household._simulate_spread_in_household(0.2, self._populations)
+
+
     def _log_data(self):
         n_unaffected = 0
         n_infected = 0
@@ -234,6 +292,7 @@ class PopulationCentreBase:
         """
         self._interact_stochastic()
         self._interact_periodic()
+        self._simulate_spread_in_households()
 
         self._heal()
         self._kill()

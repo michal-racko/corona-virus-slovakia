@@ -2,7 +2,7 @@
 
 min_inhabitants: 20000
 simulation_days: 160
-n_processes: 12
+n_processes: 2
 
 population:
   mean_periodic_interactions: 2

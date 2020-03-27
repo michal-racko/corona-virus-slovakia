@@ -247,6 +247,19 @@ class PopulationBase:
                                      (self._health_condition <= self._hospitalization_percentage) * \
                                      (self._hospitalization_start >= (self._day_i - self._illness_days_start))
 
+    def infect_particular_citizen( self,
+                                   citizen_index: int
+                                 ):
+        assert citizen_index < self._size
+
+        # cannot get infected if dead, immune or already infected
+        if (self._ill[citizen_index] or self._is_immune[citizen_index] or (not self._is_alive[citizen_index])):
+            return
+
+        self._illness_days_start[citizen_index] = self._day_i
+        self._ill[citizen_index] = True
+        self._is_new_case = True
+
     def heal(self):
         """
         Heals members of the population if they are infected
