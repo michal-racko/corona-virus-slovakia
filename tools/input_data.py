@@ -32,6 +32,8 @@ class InputData:
         self._municipal_df = self._municipal_df.loc[population_size_mask]
         self.migration_matrix = self.migration_matrix[population_size_mask].T[population_size_mask].T
 
+        self._municipal_df['city_id'] = np.arange(len(self._municipal_df))
+
         logging.info(f'Municipal data preview:\n {self._municipal_df}')
 
         self.mean_travel_ratio = self._get_mean_travel_ratio()
@@ -83,6 +85,9 @@ class InputData:
 
     def get_population_sizes(self) -> np.ndarray:
         return self._municipal_df.popul.values
+
+    def get_city_ids(self) -> np.ndarray:
+        return self._municipal_df.city_id.values
 
     def get_longitudes(self) -> np.ndarray:
         return self._municipal_df.long.values

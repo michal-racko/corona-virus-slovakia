@@ -1,5 +1,6 @@
 matplotlib
 numpy
+cupy
 pandas
 pyyaml
 scipy

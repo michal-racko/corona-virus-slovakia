@@ -4,6 +4,7 @@ import logging
 
 from abc import ABCMeta, abstractmethod
 
+from tools.config import Config
 from tools.input_data import InputData
 
 virus_type = typing.TypeVar('virus_type', bound='Virus')

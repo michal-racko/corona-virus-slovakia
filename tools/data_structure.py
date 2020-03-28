@@ -160,7 +160,6 @@ class GeographicalResult:
             hospitalized=hospitalized.tolist()
         )
 
-
     def get_mortalities(self, day_i=-1, asratio=False) -> tuple:
         return self._get_parameter('dead', day_i, asratio)
 

@@ -1,7 +1,7 @@
 # === Simulation parameters ===
 
-min_inhabitants: 30000
-simulation_days: 160
+min_inhabitants: 50
+simulation_days: 120
 n_processes: 12
 
 population:
@@ -22,12 +22,15 @@ infectious_start: 5
 
 # mean time after which a person who contracted the virus
 # starts needing hospitalization
-hospitalization_start: 10
+hospitalization_start_mean: 10
+hospitalization_start_std: 1.5
 
-hospitalization_percentage: 0.1
+critical_care_start_mean: 3
+critical_care_start_std: 1.5
 
 # === inputs ===
 
+#migration_matrix: OD_mock.pickle
 migration_matrix: data/sensitive/OD_final.pickle
 populations_file: data/sensitive/munic_pop.xlsx
 town_locations_file: data/sensitive/obce1.xlsx
