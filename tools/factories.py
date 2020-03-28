@@ -16,8 +16,6 @@ def city_factory(virus: Virus) -> List[PopulationCentreBase]:
 
     :param virus:               desired virus type
 
-    :param manager:             multiprocessing manager for variable sharing among cores
-
     :return:                    instances of PopulationCentreBase ready for a simulation
     """
     input_data = InputData()
@@ -33,14 +31,15 @@ def city_factory(virus: Virus) -> List[PopulationCentreBase]:
                                                      input_data.get_infected()):
         populations = [
             PopulationBase(
-                int(population / 10),
+                int(population * ratio),
                 virus,
                 hospitalization_start=config.get('hospitalization_start'),
                 hospitalization_percentage=config.get('hospitalization_percentage'),
                 infectious_start=config.get('infectious_start'),
                 mean_stochastic_interactions=config.get('population', 'mean_stochastic_interactions'),
-                mean_periodic_interactions=config.get('population', 'mean_periodic_interactions')
-            ) for i in range(10)
+                mean_periodic_interactions=config.get('population', 'mean_periodic_interactions'),
+                age=age
+            ) for age, ratio in input_data.age_distribution.items()
         ]
 
         current_city = PopulationCentreBase(

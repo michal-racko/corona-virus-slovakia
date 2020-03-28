@@ -33,7 +33,8 @@ class PopulationBase:
                  hospitalization_percentage,
                  infectious_start,
                  mean_stochastic_interactions,
-                 mean_periodic_interactions):
+                 mean_periodic_interactions,
+                 age=30):
         self._size = size
         self._indexes = np.arange(size)
 
@@ -66,6 +67,8 @@ class PopulationBase:
         self._virus = virus
 
         self._day_i = 0
+
+        self.age = age
 
     def __len__(self):
         return self._size
@@ -272,17 +275,17 @@ class PopulationBase:
         """
         Kills a portion of the infected population
         """
-        daily_prob = self._virus.get_mortality() / self._virus.illness_days_mean
+        daily_prob = self._virus.get_mortality(self.age) / self._virus.illness_days_mean
 
         ill_alive = (self._ill * self._is_alive).copy()
 
-        passed_away = np.random.random(
+        survived = np.random.random(
             ill_alive.astype(int).sum()
         ) > daily_prob
 
-        self._is_alive[ill_alive] = passed_away
+        self._is_alive[ill_alive] = survived
 
-        self._need_hospitalization[ill_alive] *= passed_away
+        self._need_hospitalization[ill_alive] *= survived
 
     def next_day(self):
         """

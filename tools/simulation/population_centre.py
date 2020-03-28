@@ -56,10 +56,14 @@ class PopulationCentreBase:
         :param random_seed:         Random seed to be used
         """
         for population in self._populations:
-            population.infect(
-                len(population) / len(self) * n_infected,
-                random_seed=random_seed
-            )
+            try:
+                population.infect(
+                    len(population) / len(self) * n_infected,
+                    random_seed=random_seed
+                )
+
+            except ZeroDivisionError:
+                return
 
     def get_health_states(self, n=None, random_seed=None) -> np.ndarray:
         """

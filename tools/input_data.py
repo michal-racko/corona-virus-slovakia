@@ -1,3 +1,4 @@
+import json
 import pickle
 import logging
 
@@ -10,6 +11,10 @@ from tools.general import singleton
 
 @singleton
 class InputData:
+    """
+    Reads data from files as specified in the config and stores it.
+    """
+
     def __init__(self):
         self._config = Config()
 
@@ -30,6 +35,35 @@ class InputData:
         logging.info(f'Municipal data preview:\n {self._municipal_df}')
 
         self.mean_travel_ratio = self._get_mean_travel_ratio()
+
+        self.age_distribution = None
+
+        self._prepare_age_distribution()
+
+        self.symptoms = None
+
+        self._prepare_symptoms()
+
+    def _prepare_symptoms(self):
+        with open(self._config.get('age_symptoms')) as f:
+            symptom_data = json.load(f)
+
+        self.symptoms = {}
+
+        for symptom_type, data in symptom_data.items():
+            self.symptoms[symptom_type] = {
+                int(age): prob for age, prob in data.items()
+            }
+
+    def _prepare_age_distribution(self):
+        with open(self._config.get('age_distribution')) as f:
+            age_data = json.load(f)
+
+        n_all = sum(age_data.values())
+
+        self.age_distribution = {
+            int(age): n / n_all for age, n in age_data.items()
+        }
 
     def _get_mean_travel_ratio(self) -> float:
         """

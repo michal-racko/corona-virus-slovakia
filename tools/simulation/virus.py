@@ -31,6 +31,7 @@ class Virus:
         self.asymptomatic_ratio = asymptomatic_ratio
         self.hospitalized_ratio = hospitalized_ratio
         self.mild_symptoms_ratio = 1 - hospitalized_ratio - asymptomatic_ratio
+
         input_data = InputData()
 
         mean_periodic_interactions = mean_periodic_interactions
@@ -97,7 +98,13 @@ class SARSCoV2(Virus):
             mean_stochastic_interactions=mean_stochastic_interactions
         )
 
-        self._mortality = 0.03
+        self.mortality = 0.03
 
-    def get_mortality(self, **kwargs) -> float:
-        return self._mortality
+        input_data = InputData()
+
+        self.age_mortalities = input_data.symptoms['fatal']
+        self.age_critical_care = input_data.symptoms['critical_care']
+        self.age_hospitalized = input_data.symptoms['hospitalized']
+
+    def get_mortality(self, age, **kwargs) -> float:
+        return self.age_mortalities[age]
