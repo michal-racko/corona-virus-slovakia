@@ -13,7 +13,7 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s'
 )
 
-DEFAULT_CONFIG_PATH = 'config/monte_carlo.yml'
+DEFAULT_CONFIG_PATH = 'config/business_as_usual.yml'
 
 parser = argparse.ArgumentParser(
     description='A Monte Carlo simulation of virus spreading'
@@ -37,7 +37,7 @@ except TypeError:
     config.read(DEFAULT_CONFIG_PATH)
 
 
-def plot_geto_data(day_i):
+def plot_geo_data(day_i):
     day_string = f'{day_i}'.zfill(3)
 
     plot_infected(
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
     pool = Pool(config.get('n_processes'))
 
-    pool.map(plot_geto_data, [i for i in range(360)])
+    pool.map(plot_geo_data, [i for i in range(config.get('simulation_days'))])
 
     individual_city_dir = config.get('individual_cities', 'dir')
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
             f'{individual_city_dir}/{city_name}.png'
         )
 
-    # plot_pandemic(
-    #     data.get_total_timeseries(),
-    #     f'{individual_city_dir}/total.png'
-    # )
+    plot_pandemic(
+        data.get_total_timeseries(),
+        f'{individual_city_dir}/total.png'
+    )

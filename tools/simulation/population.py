@@ -67,6 +67,7 @@ class Population:
         self._city_id = None
         self._indexes = None
 
+        config = Config()
         input_data = InputData()
 
         city_populations = {
@@ -75,8 +76,9 @@ class Population:
 
         self._init_cities(city_populations)
 
-        self._household_id = cp.zeros(self._size)
-        self._age = cp.random.randint(0, 8, size=self._size) * 10  # cp.ones(size) * 30
+        self._age = cp.zeros(self._size).astype(int)
+
+        self._init_ages(input_data.age_distribution)
 
         self._unique_ages = [int(a) for a in cp.unique(self._age)]
 
@@ -90,29 +92,36 @@ class Population:
 
         self._is_susceptible = cp.ones(self._size).astype(bool)
 
-        config = Config()
-
-        self._health_condition = cp.random.random(self._size).astype(bool)
+        self._health_condition = cp.random.random(self._size).astype(float)
 
         self._hospitalization_percentage = cp.zeros(self._size).astype(float)
 
         for age, percentage in input_data.symptoms['hospitalized'].items():
-            self._hospitalization_percentage[self._age == age] = percentage
+            self._hospitalization_percentage[self._age == age] = percentage * \
+                                                                 input_data.symptoms['symptomatic'][age]
 
         self._critical_care_percentage = cp.zeros(self._size).astype(float)
 
         for age, percentage in input_data.symptoms['critical_care'].items():
-            self._critical_care_percentage[self._age == age] = percentage
+            self._critical_care_percentage[self._age == age] = percentage * \
+                                                               input_data.symptoms['symptomatic'][age]
+
+        self._is_symptomatic = cp.zeros(self._size).astype(bool)
+
+        sympt_dice = cp.random.random(self._size)
+
+        for age, percentage in input_data.symptoms['symptomatic'].items():
+            self._is_symptomatic[self._age == age] = (sympt_dice[self._age == age] <= percentage)
 
         self._need_hospitalization = cp.zeros(self._size).astype(bool)
-        self._hospitalization_start = np.random.normal(
+        self._hospitalization_start = cp.random.normal(
             config.get('hospitalization_start_mean'),
             config.get('hospitalization_start_std'),
             self._size
         )
 
         self._need_critical_care = cp.zeros(self._size).astype(bool)
-        self._critical_care_start = self._hospitalization_start + np.random.normal(
+        self._critical_care_start = self._hospitalization_start + cp.random.normal(
             config.get('critical_care_start_mean'),
             config.get('critical_care_start_std'),
             self._size
@@ -124,8 +133,8 @@ class Population:
         self._mean_periodic_interactions = config.get('population', 'mean_periodic_interactions')
 
         self._infectious_start = cp.random.normal(
-            config.get('infectious_start'),
-            0.01,
+            config.get('infectious_start_mean'),
+            config.get('infectious_start_std'),
             self._size
         ).astype(int)
 
@@ -166,14 +175,22 @@ class Population:
 
         self._city_population_sizes = np.array(self._city_population_sizes)
 
+    def _init_ages(self, age_data: dict):
+        age_dice = cp.random.random(self._size)
+
+        age_total = sum(age_data.values())
+
+        current_threshold = 0
+
+        for age, age_population in age_data.items():
+            age_mask = (current_threshold <= age_dice) * (age_dice < current_threshold + age_population / age_total)
+
+            self._age[age_mask] = age
+
+            current_threshold += age_population / age_total
+
     def __len__(self):
         return self._size
-
-    def set_household_ids(self):
-        """
-        TODO
-        """
-        raise NotImplementedError
 
     def get_susceptible(self) -> cp.ndarray:
         """
@@ -253,6 +270,16 @@ class Population:
             return self._sort_by_city_ids([], [])
 
         city_ids, values = cp.unique(hospitalized, return_counts=True)
+
+        return self._sort_by_city_ids(city_ids, values)
+
+    def get_critical_care_by_city(self) -> tuple:
+        critical_care = self._city_id[self._need_critical_care]
+
+        if len(critical_care) == 0:
+            return self._sort_by_city_ids([], [])
+
+        city_ids, values = cp.unique(critical_care, return_counts=True)
 
         return self._sort_by_city_ids(city_ids, values)
 
@@ -434,8 +461,8 @@ class Population:
                                      (self._hospitalization_start >= (self._day_i - self._day_contracted))
 
         self._need_critical_care = self._is_infected * \
-                                   (self._health_condition <= self._hospitalization_percentage) * \
-                                   (self._hospitalization_start >= (self._day_i - self._day_contracted))
+                                   (self._health_condition <= self._critical_care_percentage) * \
+                                   (self._critical_care_start >= (self._day_i - self._day_contracted))
 
     def _heal(self):
         """
@@ -493,6 +520,8 @@ class Population:
         self._spread_in_cities(random_seed=42)
 
         self._heal()
+
+        self._hospitalize()
 
         self._kill()
 

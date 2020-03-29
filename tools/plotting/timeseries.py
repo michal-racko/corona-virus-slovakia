@@ -109,7 +109,17 @@ def plot_pandemic(data: TimeSeriesResult, filepath=None):
         linewidth=2
     )
 
-    ax3.legend((p7[0], p8[0], p9[0],), ('Asymptomatic', 'Mild symptoms', 'Hospitalized'))
+    p10 = ax3.plot(
+        data.days,
+        data.critical_care,
+        'k',
+        linewidth=2
+    )
+
+    ax3.legend(
+        (p7[0], p8[0], p9[0], p10[0]),
+        ('Asymptomatic', 'Mild symptoms', 'Hospitalized', 'Critical Care')
+    )
     ax3.set_xlabel('Days', fontsize=16)
 
     ax3.grid(True)
@@ -126,6 +136,3 @@ def plot_pandemic(data: TimeSeriesResult, filepath=None):
         pl.close()
 
         logging.info(f'Result plot saved to: {filepath}')
-
-
-

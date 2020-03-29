@@ -14,7 +14,7 @@ def plot_mortality(data: GeographicalResult, day_i=-1):
 
 
 def plot_infected(data: GeographicalResult, day_i=-1, filepath=None):
-    longitudes, latitudes, values = data.get_infected(day_i=day_i, asratio=True)
+    longitudes, latitudes, values = data.get_infected(day_i=day_i, asratio=False)
 
     if day_i != -1:
         title = f'Simulation day: {day_i}'
@@ -30,6 +30,6 @@ def plot_infected(data: GeographicalResult, day_i=-1, filepath=None):
         cmap='Reds',
         alpha=0.85,
         title=title,
-        values_range=(0, 1),
+        values_range=(0, 1400),
         filepath=filepath
     )

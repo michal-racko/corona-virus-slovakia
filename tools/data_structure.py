@@ -17,13 +17,15 @@ class TimeSeriesResult:
                  new_cases: list,
                  immune: list,
                  dead: list,
-                 hospitalized: list):
+                 hospitalized: list,
+                 critical_care: list):
         assert len(infected) == len(simulation_days)
         assert len(susceptible) == len(simulation_days)
         assert len(new_cases) == len(simulation_days)
         assert len(immune) == len(simulation_days)
         assert len(dead) == len(simulation_days)
         assert len(hospitalized) == len(simulation_days)
+        assert len(critical_care) == len(simulation_days)
 
         self.days = simulation_days
         self.infected = infected
@@ -32,6 +34,7 @@ class TimeSeriesResult:
         self.immune = immune
         self.dead = dead
         self.hospitalized = hospitalized
+        self.critical_care = critical_care
 
     def to_json(self, filepath: str):
         """
@@ -47,7 +50,8 @@ class TimeSeriesResult:
                 'new_cases': self.new_cases,
                 'immune': self.immune,
                 'dead': self.dead,
-                'hospitalized': self.hospitalized
+                'hospitalized': self.hospitalized,
+                'critical_care': self.critical_care,
             }, f)
 
 
@@ -69,6 +73,7 @@ class GeographicalResult:
             'immune': [],
             'dead': [],
             'hospitalized': [],
+            'critical_care': [],
             'new_cases': [],
         }
 
@@ -145,6 +150,9 @@ class GeographicalResult:
     def add_hospitalized(self, counts):
         self._data['hospitalized'].append(counts)
 
+    def add_critical_care(self, counts):
+        self._data['critical_care'].append(counts)
+
     def add_new_cases(self, counts):
         self._data['new_cases'].append(counts)
 
@@ -193,6 +201,7 @@ class GeographicalResult:
             immune=np.array(self._data['immune']).T[city_index],
             dead=np.array(self._data['dead']).T[city_index],
             hospitalized=np.array(self._data['hospitalized']).T[city_index],
+            critical_care=np.array(self._data['critical_care']).T[city_index]
         )
 
     def get_total_timeseries(self) -> TimeSeriesResult:
@@ -203,7 +212,8 @@ class GeographicalResult:
             new_cases=np.array(self._data['new_cases']).sum(axis=1),
             immune=np.array(self._data['immune']).sum(axis=1),
             dead=np.array(self._data['dead']).sum(axis=1),
-            hospitalized=np.array(self._data['hospitalized']).sum(axis=1)
+            hospitalized=np.array(self._data['hospitalized']).sum(axis=1),
+            critical_care=np.array(self._data['critical_care']).sum(axis=1)
         )
 
     def get_mortalities(self, day_i=-1, asratio=False) -> tuple:

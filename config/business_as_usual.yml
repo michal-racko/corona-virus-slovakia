@@ -1,11 +1,11 @@
 # === Simulation parameters ===
 
-min_inhabitants: 50000
-simulation_days: 60
+min_inhabitants: 2800
+simulation_days: 160
 
 population:
-  mean_periodic_interactions: 10
-  mean_stochastic_interactions: 10
+  mean_periodic_interactions: 0
+  mean_stochastic_interactions: 20
 
 # === Parameters of the virus ===
 
@@ -38,12 +38,12 @@ age_symptoms: data/age_symptoms.json
 
 # === outputs ===
 
-result_file: results/cities-test.json
+result_file: results/cities-business_as_usual.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/individual-test
+  dir: plots/individual-business_as_usual
   cities:
     - Martin
     - Nitra
@@ -59,6 +59,6 @@ individual_cities:
 geographical:
   precision: 500
   timeseries_dir:
-    plots/geographical/timeseries-test
+    plots/geographical/timeseries-business_as_usual
 
 n_processes: 12
