@@ -1,18 +1,18 @@
 # === Simulation parameters ===
 
-min_inhabitants: 50
-simulation_days: 120
+min_inhabitants: 0
+simulation_days: 100
 n_processes: 12
 
 population:
-  mean_periodic_interactions: 2
-  mean_stochastic_interactions: 22
+  mean_periodic_interactions: 10
+  mean_stochastic_interactions: 10
 
 # === Parameters of the virus ===
 
 virus:
   name: SARS-CoV2
-  transmission_probability: 0.022
+  transmission_probability: 0.015
   infectious_days_mean: 6.5
   infectious_days_std: 1
 

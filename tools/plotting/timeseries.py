@@ -31,7 +31,7 @@ def plot_pandemic(data: TimeSeriesResult, filepath=None):
 
     p1 = ax1.plot(
         data.days,
-        data.unaffected,
+        data.susceptible,
         'tab:blue',
         linewidth=2
     )

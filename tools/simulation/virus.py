@@ -18,16 +18,13 @@ class Virus:
 
     def __init__(self,
                  asymptomatic_ratio: float,
-                 hospitalized_ratio: float,
-                 illness_days_mean,
-                 illness_days_std,
-                 transmission_probability,
-                 mean_periodic_interactions,
-                 mean_stochastic_interactions):
-        self.illness_days_mean = illness_days_mean
-        self.illness_days_std = illness_days_std
+                 hospitalized_ratio: float):
+        config = Config()
 
-        self.transmission_probability = transmission_probability
+        self.illness_days_mean = config.get('virus', 'infectious_days_mean')
+        self.illness_days_std = config.get('virus', 'infectious_days_std')
+
+        self.transmission_probability = config.get('virus', 'transmission_probability')
 
         self.asymptomatic_ratio = asymptomatic_ratio
         self.hospitalized_ratio = hospitalized_ratio
@@ -35,8 +32,8 @@ class Virus:
 
         input_data = InputData()
 
-        mean_periodic_interactions = mean_periodic_interactions
-        mean_stochastic_interactions = mean_stochastic_interactions
+        mean_periodic_interactions = config.get('population', 'mean_periodic_interactions')
+        mean_stochastic_interactions = config.get('population', 'mean_stochastic_interactions')
 
         mean_interactions = mean_periodic_interactions + mean_stochastic_interactions
 
@@ -83,20 +80,10 @@ class Virus:
 
 
 class SARSCoV2(Virus):
-    def __init__(self,
-                 illness_days_mean,
-                 illness_days_std,
-                 transmission_probability,
-                 mean_periodic_interactions,
-                 mean_stochastic_interactions):
+    def __init__(self, *args, **kwargs):
         super().__init__(
             asymptomatic_ratio=0.4,
-            hospitalized_ratio=0.1,
-            illness_days_mean=illness_days_mean,
-            illness_days_std=illness_days_std,
-            transmission_probability=transmission_probability,
-            mean_periodic_interactions=mean_periodic_interactions,
-            mean_stochastic_interactions=mean_stochastic_interactions
+            hospitalized_ratio=0.1
         )
 
         self.mortality = 0.03

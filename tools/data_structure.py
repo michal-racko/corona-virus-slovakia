@@ -13,13 +13,13 @@ class TimeSeriesResult:
     def __init__(self,
                  simulation_days: list,
                  infected: list,
-                 unaffected: list,
+                 susceptible: list,
                  new_cases: list,
                  immune: list,
                  dead: list,
                  hospitalized: list):
         assert len(infected) == len(simulation_days)
-        assert len(unaffected) == len(simulation_days)
+        assert len(susceptible) == len(simulation_days)
         assert len(new_cases) == len(simulation_days)
         assert len(immune) == len(simulation_days)
         assert len(dead) == len(simulation_days)
@@ -27,7 +27,7 @@ class TimeSeriesResult:
 
         self.days = simulation_days
         self.infected = infected
-        self.unaffected = unaffected
+        self.susceptible = susceptible
         self.new_cases = new_cases
         self.immune = immune
         self.dead = dead
@@ -43,7 +43,7 @@ class TimeSeriesResult:
             json.dump({
                 'days': self.days,
                 'infected': self.infected,
-                'unaffected': self.unaffected,
+                'susceptible': self.susceptible,
                 'new_cases': self.new_cases,
                 'immune': self.immune,
                 'dead': self.dead,
@@ -53,12 +53,100 @@ class TimeSeriesResult:
 
 class GeographicalResult:
     def __init__(self):
-        self._data = {}
+        self._city_ids = None
+        self._city_names = None
+        self._city_sizes = None
 
-    def add_result(self, data: dict):
-        name = data['name']
+        self._cid_to_name = None
+        self._name_to_cid = None
 
-        self._data[name] = {k: v for k, v in data.items() if k != 'name'}
+        self._longitudes = None
+        self._latitudes = None
+
+        self._data = {
+            'susceptible': [],
+            'infected': [],
+            'immune': [],
+            'dead': [],
+            'hospitalized': [],
+            'new_cases': [],
+        }
+
+    def to_json(self, filepath: str):
+        """
+        Saves results as a .json file to the given path
+        """
+        ensure_dir('/'.join(filepath.split('/')[:-1]))
+
+        with open(filepath, 'w') as f:
+            json.dump({
+                'data': self._data,
+                'city_ids': self._city_ids,
+                'city_names': self._city_names,
+                'city_sizes': self._city_sizes,
+                'longitudes': self._longitudes,
+                'latitudes': self._latitudes
+            }, f)
+
+    @classmethod
+    def read_json(cls, filepath: str):
+        """
+        Loads data from a .json file
+        """
+        with open(filepath) as f:
+            _data = json.load(f)
+
+        instance = cls()
+
+        instance.set_data(_data['data'])
+        instance.set_city_coords(
+            _data['longitudes'],
+            _data['latitudes']
+        )
+        instance.set_city_ids(
+            _data['city_ids'],
+            _data['city_names']
+        )
+        instance.set_city_sizes(
+            _data['city_sizes']
+        )
+
+        return instance
+
+    def set_data(self, data: dict):
+        self._data = data
+
+    def set_city_ids(self, city_ids, city_names):
+        self._city_ids = [int(cid) for cid in city_ids]
+        self._city_names = [str(cn) for cn in city_names]
+
+        self._cid_to_name = {cid: cn for cid, cn in zip(city_ids, city_names)}
+        self._name_to_cid = {cn: cid for cid, cn in zip(city_ids, city_names)}
+
+    def set_city_sizes(self, city_sizes):
+        self._city_sizes = [int(cs) for cs in city_sizes]
+
+    def set_city_coords(self, longitudes, latitudes):
+        self._longitudes = [float(l) for l in longitudes]
+        self._latitudes = [float(l) for l in latitudes]
+
+    def add_susceptible(self, counts):
+        self._data['susceptible'].append(counts)
+
+    def add_infected(self, counts):
+        self._data['infected'].append(counts)
+
+    def add_immune(self, counts):
+        self._data['immune'].append(counts)
+
+    def add_dead(self, counts):
+        self._data['dead'].append(counts)
+
+    def add_hospitalized(self, counts):
+        self._data['hospitalized'].append(counts)
+
+    def add_new_cases(self, counts):
+        self._data['new_cases'].append(counts)
 
     def _get_parameter(self,
                        parameter_key: str,
@@ -73,20 +161,8 @@ class GeographicalResult:
 
         :returns:                   longitudes, latitudes, values at the given day
         """
-        values = []
-        longitudes = []
-        latitudes = []
-
         try:
-            for name, data in self._data.items():
-                value = data[parameter_key][day_i]
-
-                if asratio:
-                    value /= data['size']
-
-                values.append(value)
-                longitudes.append(data['longitude'])
-                latitudes.append(data['latitude'])
+            values = np.array(self._data[parameter_key][day_i])
 
         except KeyError:
             raise KeyError(
@@ -98,66 +174,36 @@ class GeographicalResult:
                 f'Day {day_i} is out of the range of the simulation'
             )
 
-        values = np.array(values)
-        longitudes = np.array(longitudes)
-        latitudes = np.array(latitudes)
+        if asratio:
+            values = values / np.array(self._city_sizes)
 
-        return longitudes, latitudes, values
+        return np.array(self._longitudes), np.array(self._latitudes), values
 
     def get_timeseries(self, city_name: str) -> TimeSeriesResult:
         """
         :returns:           timeseries for the given city name
         """
+        city_index = self._city_names.index(city_name)
+
         return TimeSeriesResult(
-            simulation_days=self._data[city_name]['simulation_days'],
-            infected=self._data[city_name]['infected'],
-            unaffected=self._data[city_name]['unaffected'],
-            new_cases=self._data[city_name]['new_cases'],
-            immune=self._data[city_name]['immune'],
-            dead=self._data[city_name]['dead'],
-            hospitalized=self._data[city_name]['hospitalized']
+            simulation_days=[i for i in range(len(np.array(self._data['infected']).T[city_index]))],
+            infected=np.array(self._data['infected']).T[city_index],
+            susceptible=np.array(self._data['susceptible']).T[city_index],
+            new_cases=np.array(self._data['new_cases']).T[city_index],
+            immune=np.array(self._data['immune']).T[city_index],
+            dead=np.array(self._data['dead']).T[city_index],
+            hospitalized=np.array(self._data['hospitalized']).T[city_index],
         )
 
     def get_total_timeseries(self) -> TimeSeriesResult:
-        first = True
-
-        simulation_days = []
-        infected = []
-        unaffected = []
-        new_cases = []
-        immune = []
-        dead = []
-        hospitalized = []
-
-        for city_name, city_data in self._data.items():
-            if first:
-                simulation_days = city_data['simulation_days']
-
-                infected = np.array(city_data['infected'])
-                unaffected = np.array(city_data['unaffected'])
-                new_cases = np.array(city_data['new_cases'])
-                immune = np.array(city_data['immune'])
-                dead = np.array(city_data['dead'])
-                hospitalized = np.array(city_data['hospitalized'])
-
-                first = False
-
-            else:
-                infected += np.array(city_data['infected'])
-                unaffected += np.array(city_data['unaffected'])
-                new_cases += np.array(city_data['new_cases'])
-                immune += np.array(city_data['immune'])
-                dead += np.array(city_data['dead'])
-                hospitalized += np.array(city_data['hospitalized'])
-
         return TimeSeriesResult(
-            simulation_days=simulation_days,
-            infected=infected.tolist(),
-            unaffected=unaffected.tolist(),
-            new_cases=new_cases.tolist(),
-            immune=immune.tolist(),
-            dead=dead.tolist(),
-            hospitalized=hospitalized.tolist()
+            simulation_days=[i for i in range(len(np.array(self._data['infected']).T[0]))],
+            infected=np.array(self._data['infected']).sum(axis=1),
+            susceptible=np.array(self._data['susceptible']).sum(axis=1),
+            new_cases=np.array(self._data['new_cases']).sum(axis=1),
+            immune=np.array(self._data['immune']).sum(axis=1),
+            dead=np.array(self._data['dead']).sum(axis=1),
+            hospitalized=np.array(self._data['hospitalized']).sum(axis=1)
         )
 
     def get_mortalities(self, day_i=-1, asratio=False) -> tuple:
@@ -165,31 +211,3 @@ class GeographicalResult:
 
     def get_infected(self, day_i=-1, asratio=False) -> tuple:
         return self._get_parameter('infected', day_i, asratio)
-
-    @classmethod
-    def read_json(cls, filepath: str):
-        """
-        Loads data from a .json file
-        """
-        with open(filepath) as f:
-            _data = json.load(f)
-
-        instance = cls()
-
-        for city_name, city_data in _data.items():
-            city_data.update({
-                'name': city_name
-            })
-
-            instance.add_result(city_data)
-
-        return instance
-
-    def to_json(self, filepath: str):
-        """
-        Saves results as a .json file to the given path
-        """
-        ensure_dir('/'.join(filepath.split('/')[:-1]))
-
-        with open(filepath, 'w') as f:
-            json.dump(self._data, f)

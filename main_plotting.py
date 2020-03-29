@@ -37,14 +37,14 @@ except TypeError:
     config.read(DEFAULT_CONFIG_PATH)
 
 
-# def plot_geto_data(day_i):
-#     day_string = f'{day_i}'.zfill(3)
-#
-#     plot_infected(
-#         data,
-#         day_i=day_i,
-#         filepath=f'{geo_timeseries_dir}/infected/{day_string}.png'
-#     )
+def plot_geto_data(day_i):
+    day_string = f'{day_i}'.zfill(3)
+
+    plot_infected(
+        data,
+        day_i=day_i,
+        filepath=f'{geo_timeseries_dir}/infected/{day_string}.png'
+    )
 
 
 if __name__ == '__main__':
@@ -56,9 +56,9 @@ if __name__ == '__main__':
 
     geo_timeseries_dir = config.get('geographical', 'timeseries_dir')
 
-    # pool = Pool(config.get('n_processes'))
-    #
-    # pool.map(plot_geto_data, [i for i in range(360)])
+    pool = Pool(config.get('n_processes'))
+
+    pool.map(plot_geto_data, [i for i in range(360)])
 
     individual_city_dir = config.get('individual_cities', 'dir')
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
             f'{individual_city_dir}/{city_name}.png'
         )
 
-    plot_pandemic(
-        data.get_total_timeseries(),
-        f'{individual_city_dir}/total.png'
-    )
+    # plot_pandemic(
+    #     data.get_total_timeseries(),
+    #     f'{individual_city_dir}/total.png'
+    # )
