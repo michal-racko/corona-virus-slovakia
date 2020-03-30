@@ -82,6 +82,13 @@ class Population:
 
         self._unique_ages = [int(a) for a in cp.unique(self._age)]
 
+        self._household_meetings = {}
+        self._household_meetings_elderly = None
+        self._household_sizes = None
+        self._max_household_size = None
+
+        self._init_households(input_data.household_data)
+
         self._is_alive = cp.ones(self._size).astype(bool)
         self._is_immune = cp.zeros(self._size).astype(bool)
 
@@ -146,6 +153,50 @@ class Population:
 
         self._update_infection_probs()
 
+    def _init_households(self, household_data: dict):
+        dice = cp.random.random(self._size)
+
+        elderly_indexes = self._indexes[(self._age >= 60) * (dice <= household_data['elderly'][2])]
+
+        splitting_mask = cp.random.random(len(elderly_indexes)) < 0.5
+
+        elderly_first = elderly_indexes[splitting_mask]
+        elderly_second = cp.random.choice(
+            elderly_indexes[~splitting_mask],
+            int(sum(splitting_mask.astype(int)))
+        )
+
+        self._household_meetings_elderly = {
+            'first': elderly_first,
+            'second': elderly_second
+        }
+
+        self._household_sizes = cp.ones(self._size)
+
+        splitting_dice = cp.random.random(self._size)
+
+        current_threshold = 0
+        self._max_household_size = max([s for s in household_data['young'].keys()])
+
+        for s, ratio in household_data['young'].items():
+            mask = (current_threshold <= splitting_dice) * (splitting_dice < current_threshold + ratio)
+
+            self._household_sizes[mask] = s
+
+        self._household_sizes[
+            cp.hstack([elderly_first, elderly_second])
+        ] = -1
+
+        for i in range(2, self._max_household_size + 1):
+            current_indexes = self._indexes[self._household_sizes == i]
+
+            if len(current_indexes) == 0:
+                continue
+
+            shuffled = cp.random.choice(current_indexes, int(len(current_indexes) / i) * i)
+
+            self._household_meetings[i] = cp.split(shuffled, i)
+
     def _init_cities(self, city_populations: dict):
         """
         Sets city ids
@@ -154,7 +205,7 @@ class Population:
         """
         self._size = int(sum(city_populations.values()))
 
-        self._indexes = cp.arange(self._size)
+        self._indexes = cp.arange(self._size).astype(int)
 
         self._city_id = cp.ones(self._size) * -1
 
@@ -386,18 +437,71 @@ class Population:
         else:
             poisson_mean = self._mean_periodic_interactions
 
+        susceptible_indexes = self._indexes[self.get_susceptible()]
+        probabilities = self._probability[self._is_susceptible]
+
         interaction_multiplicities = cp.random.poisson(
             poisson_mean,
-            self._size
+            len(susceptible_indexes)
         )
 
         for interaction_i in range(int(interaction_multiplicities.max())):
-            newly_infected = (interaction_multiplicities > interaction_i) * \
-                             (cp.random.random(self._size) <= self._probability) * \
-                             self.get_susceptible()
+            susceptible = susceptible_indexes[interaction_multiplicities > interaction_i]
+            current_probs = probabilities[interaction_multiplicities > interaction_i]
 
-            self._is_infected[newly_infected] = True
-            self._day_contracted[newly_infected] = self._day_i
+            infected = susceptible[cp.random.random(len(susceptible)) <= current_probs]
+
+            self._is_infected[infected] = True
+            self._day_contracted[infected] = self._day_i
+
+    def _spread_in_households(self):
+        first_infectious = self._is_infectious[self._household_meetings_elderly['first']]
+        first_susceptible = self._is_susceptible[self._household_meetings_elderly['first']]
+
+        second_infectious = self._is_infectious[self._household_meetings_elderly['second']]
+        second_susceptible = self._is_susceptible[self._household_meetings_elderly['second']]
+
+        transmissions12 = first_susceptible * second_infectious * (
+                cp.random.random(
+                    len(first_susceptible)
+                ) <= self._virus.household_transmission_probability
+        )
+
+        transmissions21 = second_susceptible * first_infectious * (
+                cp.random.random(
+                    len(first_susceptible)
+                ) <= self._virus.household_transmission_probability
+        )
+
+        infected_ids = []
+
+        for household_size, household_ids in self._household_meetings.items():
+            n_infectious = self._is_infectious[household_ids[0]].astype(int)
+
+            for ids in household_ids[1:]:
+                n_infectious += self._is_infectious[ids]
+
+            infection_probs = n_infectious * self._virus.household_transmission_probability
+
+            for ids in household_ids:
+                susceptible_mask = self._is_susceptible[ids]
+
+                susceptible_ids = ids[susceptible_mask]
+
+                infected = susceptible_ids[cp.random.random(len(susceptible_ids)) <= infection_probs[susceptible_mask]]
+
+                if len(infected) != 0:
+                    infected_ids.append(infected)
+
+        newly_infected = cp.hstack(
+            [
+                self._household_meetings_elderly['second'][transmissions12],
+                self._household_meetings_elderly['first'][transmissions21]
+            ] + infected_ids
+        )
+
+        self._is_infected[newly_infected] = True
+        self._day_contracted[newly_infected] = self._day_i
 
     def infect_by_cities(self, city_ids, infection_counts, random_seed=None):
         """
@@ -448,67 +552,83 @@ class Population:
         self._day_contracted[newly_infected] = self._day_i
 
     def _update_infectiousness(self):
-        mask = (self._infectious_start <= self._day_i - self._day_contracted) * self._is_infected
+        infected_indexes = self._indexes[self._is_infected]
 
-        self._is_infectious[mask] = True
+        infectious = infected_indexes[
+            self._infectious_start[infected_indexes] <= self._day_i - self._day_contracted[infected_indexes]
+            ]
+
+        self._is_infectious[infectious] = True
 
     def _hospitalize(self):
-        """
+        infected_indexes = self._indexes[self._is_infected]
 
-        """
-        self._need_hospitalization = self._is_infected * \
-                                     (self._health_condition <= self._hospitalization_percentage) * \
-                                     (self._hospitalization_start >= (self._day_i - self._day_contracted))
+        hospitalization_mask = (
+                                       self._health_condition[infected_indexes] <=
+                                       self._hospitalization_percentage[infected_indexes]
+                               ) * (
+                                       self._hospitalization_start[infected_indexes] >=
+                                       (self._day_i - self._day_contracted[infected_indexes])
+                               )
 
-        self._need_critical_care = self._is_infected * \
-                                   (self._health_condition <= self._critical_care_percentage) * \
-                                   (self._critical_care_start >= (self._day_i - self._day_contracted))
+        self._need_hospitalization[infected_indexes[hospitalization_mask]] = True
+
+        critical_care_mask = (
+                                     self._health_condition[infected_indexes] <=
+                                     self._critical_care_percentage[infected_indexes]
+                             ) * (
+                                     self._critical_care_start[infected_indexes] >=
+                                     (self._day_i - self._day_contracted[infected_indexes])
+                             )
+
+        self._need_critical_care[infected_indexes[critical_care_mask]] = True
 
     def _heal(self):
         """
         Heals members of the population if they are infected
         """
-        healed = (self._day_i - self._day_contracted - self._infectious_start) >= abs(
+        ill_indexes = self._indexes[self._is_infected]
+
+        healed = (self._day_i - self._day_contracted[ill_indexes] - self._infectious_start[ill_indexes]) >= abs(
             cp.random.normal(
                 self._virus.illness_days_mean,
                 self._virus.illness_days_std,
-                len(self._day_contracted)
+                len(ill_indexes)
             )
         )
 
-        immune = self._is_infected * healed
+        healed_indexes = ill_indexes[healed]
 
-        self._is_infected[healed] = False
-        self._is_infectious[healed] = False
-        self._need_hospitalization[healed] = False
-        self._need_critical_care[healed] = False
+        self._is_infected[healed_indexes] = False
+        self._is_infectious[healed_indexes] = False
+        self._need_hospitalization[healed_indexes] = False
+        self._need_critical_care[healed_indexes] = False
 
-        self._illness_days_total[healed] = self._day_i - self._day_contracted[healed]
+        self._illness_days_total[healed_indexes] = self._day_i - self._day_contracted[healed_indexes]
 
-        self._is_immune[immune] = True
+        self._is_immune[healed_indexes] = True
 
     def _kill(self):
         """
         Kills a portion of the infected population
         """
+        ill_indexes = self._indexes[self._is_infected]
+
+        if len(ill_indexes) == 0:
+            return
+
+        ill_ages = self._age[self._is_infected]
+        probability = self._probability[self._is_infected]
+
         for age in self._unique_ages:
-            self._probability[self._age == age] = self._virus.get_mortality(age=age) / self._virus.illness_days_mean
+            probability[ill_ages == age] = self._virus.get_mortality(age=age) / self._virus.illness_days_mean
 
-        ill_alive = (self._is_infected * self._is_alive)
+        passed_away = ill_indexes[cp.random.random(len(ill_indexes)) <= probability]
 
-        if len(ill_alive) == 0:
-            return
-
-        n_ill_alive = int(ill_alive.astype(int).sum())
-
-        if n_ill_alive == 0:
-            return
-
-        survived = cp.random.random(n_ill_alive) > self._probability[ill_alive]
-
-        self._is_alive[ill_alive] = survived
-        self._need_hospitalization[ill_alive] *= survived
-        self._need_critical_care[ill_alive] *= survived
+        self._is_alive[passed_away] = False
+        self._is_infected[passed_away] = False
+        self._need_hospitalization[passed_away] = False
+        self._need_critical_care[passed_away] = False
 
     def next_day(self):
         """
@@ -517,7 +637,7 @@ class Population:
         self._update_infectiousness()
 
         self._spread_in_cities()
-        self._spread_in_cities(random_seed=42)
+        self._spread_in_households()
 
         self._heal()
 

@@ -46,6 +46,11 @@ class InputData:
 
         self._prepare_symptoms()
 
+        self.household_data = None
+        self.mean_household_daily_meetings = None
+
+        self._prepare_households()
+
     def _prepare_symptoms(self):
         with open(self._config.get('age_symptoms')) as f:
             symptom_data = json.load(f)
@@ -66,6 +71,37 @@ class InputData:
         self.age_distribution = {
             int(age): n / n_all for age, n in age_data.items()
         }
+
+    def _prepare_households(self):
+        with open(self._config.get('household_distribution')) as f:
+            data = json.load(f)
+
+            self.household_data = {
+                'elderly': {
+                    int(size): ratio for size, ratio in data['elderly'].items()
+                },
+                'young': {
+                    int(size): ratio for size, ratio in data['young'].items()
+                }
+            }
+
+        elderly_ratio = 0
+        young_ratio = 0
+
+        for age, ratio in self.age_distribution.items():
+            if age >= 60:
+                elderly_ratio += ratio
+
+            else:
+                young_ratio += ratio
+
+        self.mean_household_daily_meetings = 0
+
+        self.mean_household_daily_meetings += self.household_data['elderly'][2] * elderly_ratio
+
+        for size, ratio in self.household_data['young'].items():
+            if size > 1:
+                self.mean_household_daily_meetings += size * ratio * young_ratio
 
     def _get_mean_travel_ratio(self) -> float:
         """

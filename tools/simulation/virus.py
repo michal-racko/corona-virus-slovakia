@@ -25,6 +25,7 @@ class Virus:
         self.illness_days_std = config.get('virus', 'infectious_days_std')
 
         self.transmission_probability = config.get('virus', 'transmission_probability')
+        self.household_transmission_probability = config.get('virus', 'household_transmission_probability')
 
         self.asymptomatic_ratio = asymptomatic_ratio
         self.hospitalized_ratio = hospitalized_ratio
@@ -38,10 +39,12 @@ class Virus:
         mean_interactions = mean_periodic_interactions + mean_stochastic_interactions
 
         self.R = (1 + input_data.mean_travel_ratio) * \
-                 mean_interactions * self.illness_days_mean * self.transmission_probability
+                 mean_interactions * self.illness_days_mean * self.transmission_probability + \
+                 input_data.mean_household_daily_meetings * self.illness_days_mean * \
+                 self.household_transmission_probability
 
         logging.info(
-            f'Initialized the {self.__class__.__name__} virus with R0={self.R:.4f}'
+            f'Initialized {self.__class__.__name__} virus with R0={self.R:.4f}'
         )
 
     @abstractmethod
