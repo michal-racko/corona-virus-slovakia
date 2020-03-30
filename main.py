@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
         _, susceptible = population.get_susceptible_by_city()
         _, infected = population.get_infected_by_city()
-        _, immune = population.get_infected_by_city()
+        _, immune = population.get_immune_by_city()
         _, dead = population.get_dead_by_city()
         _, hospitalized = population.get_hospitalized_by_city()
         _, critical_care = population.get_critical_care_by_city()
