@@ -2,7 +2,6 @@ import time
 import logging
 
 import numpy as np
-import matplotlib.pyplot as pl
 
 try:
     import cupy as cp
@@ -118,7 +117,7 @@ class Population:
             self._critical_care_percentage[self._age == age] = percentage * \
                                                                input_data.symptoms['critical_care'][age] * 0.6
 
-        self._is_symptomatic = cp.zeros(self._size).astype(bool)
+        self._is_symptomatic = cp.ones(self._size).astype(bool) * 0.6  # Defines whether symptomatic once infected
 
         sympt_dice = cp.random.random(self._size)
 
@@ -724,10 +723,22 @@ class Population:
         self._need_hospitalization[passed_away] = False
         self._need_critical_care[passed_away] = False
 
+    def _update_restrictions(self):
+        if self._day_i == 20:
+            self._mean_stochastic_interactions = self._mean_stochastic_interactions * 0.5
+
+        if self._day_i == 40:
+            self._mean_stochastic_interactions = self._mean_stochastic_interactions * 0.1
+
+        if self._day_i == 100:
+            self._mean_stochastic_interactions = self._mean_stochastic_interactions * 20
+
     def next_day(self):
         """
         Next day of the simulation
         """
+        self._update_restrictions()
+
         self._update_infectiousness()
 
         self._spread_in_cities()

@@ -1,7 +1,7 @@
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 180
+simulation_days: 220
 
 population:
   mean_periodic_interactions: 0
@@ -11,8 +11,8 @@ population:
 
 virus:
   name: SARS-CoV2
-  transmission_probability: 0.01325
-  household_transmission_probability: 0.05
+  transmission_probability: 0.017
+  household_transmission_probability: 0.025
   infectious_days_mean: 6.5
   infectious_days_std: 1
 
@@ -46,12 +46,12 @@ household_distribution: data/households.json
 
 # === outputs ===
 
-result_file: results/business-as-usual-elderly-limited.json
+result_file: results/blackout.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/business-as-usual-elderly-limited
+  dir: plots/blackout
   cities:
     - Martin
     - Nitra
@@ -64,11 +64,11 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/check/business-as-usual-elderly-limited
+check_plots: plots/blackout
 
 geographical:
   precision: 500
   timeseries_dir:
-    plots/geographical/business-as-usual-elderly-limited
+    plots/geographical/blackout
 
 n_processes: 12

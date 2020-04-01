@@ -1,7 +1,7 @@
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 160
+simulation_days: 180
 
 population:
   mean_periodic_interactions: 0
@@ -11,8 +11,8 @@ population:
 
 virus:
   name: SARS-CoV2
-  transmission_probability: 0.015
-  household_transmission_probability: 0.05
+  transmission_probability: 0.017
+  household_transmission_probability: 0.025
   infectious_days_mean: 6.5
   infectious_days_std: 1
 
@@ -26,8 +26,14 @@ infectious_start_std: 1
 hospitalization_start_mean: 10
 hospitalization_start_std: 1.5
 
-critical_care_start_mean: 3
+hospitalization_length_mean: 8
+hospitalization_length_std: 1
+
+critical_care_start_mean: 6
 critical_care_start_std: 1.5
+
+critical_care_length_mean: 10
+critical_care_length_std: 1
 
 # === inputs ===
 
@@ -57,6 +63,8 @@ individual_cities:
     - Prešov
     - Bratislava-Ružinov
     - Bratislava-Petržalka
+
+check_plots: plots/check/restrictions-60-elderly-limited
 
 geographical:
   precision: 500
