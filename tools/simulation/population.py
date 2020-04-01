@@ -109,13 +109,14 @@ class Population:
 
         for age, percentage in input_data.symptoms['hospitalized'].items():
             self._hospitalization_percentage[self._age == age] = percentage * \
-                                                                 input_data.symptoms['symptomatic'][age]
+                                                                 input_data.symptoms['hospitalized'][
+                                                                     age] * 0.6  # 60% symptoms (TODO: config)
 
         self._critical_care_percentage = cp.zeros(self._size).astype(float)
 
         for age, percentage in input_data.symptoms['critical_care'].items():
             self._critical_care_percentage[self._age == age] = percentage * \
-                                                               input_data.symptoms['symptomatic'][age]
+                                                               input_data.symptoms['critical_care'][age] * 0.6
 
         self._is_symptomatic = cp.zeros(self._size).astype(bool)
 
@@ -131,10 +132,22 @@ class Population:
             self._size
         )
 
+        self._hospitalization_finish = self._hospitalization_start + cp.random.normal(
+            self.config.get('hospitalization_length_mean'),
+            self.config.get('hospitalization_length_std'),
+            self._size
+        )
+
         self._need_critical_care = cp.zeros(self._size).astype(bool)
         self._critical_care_start = self._hospitalization_start + cp.random.normal(
             self.config.get('critical_care_start_mean'),
             self.config.get('critical_care_start_std'),
+            self._size
+        )
+
+        self._critical_care_finish = self._critical_care_start + cp.random.normal(
+            self.config.get('critical_care_length_mean'),
+            self.config.get('critical_care_length_std'),
             self._size
         )
 
@@ -626,6 +639,7 @@ class Population:
                                )
 
         self._need_hospitalization[infected_indexes[hospitalization_mask]] = True
+        self._is_infectious[infected_indexes[hospitalization_mask]] = False
 
         critical_care_mask = (
                                      self._health_condition[infected_indexes] <=
@@ -637,11 +651,42 @@ class Population:
 
         self._need_critical_care[infected_indexes[critical_care_mask]] = True
 
+        hospitalized_indexes = self._indexes[self._need_hospitalization]
+
+        healed = self._day_i - self._day_contracted[hospitalized_indexes] + \
+                 self._hospitalization_start[hospitalized_indexes] > self._hospitalization_finish[hospitalized_indexes]
+
+        healed_indexes = hospitalized_indexes[healed]
+
+        self._need_hospitalization[healed_indexes] = False
+
+        self._is_infected[healed_indexes] = False
+        self._is_infectious[healed_indexes] = False
+
+        self._is_immune[healed_indexes] = True
+
+        critical_care_indexes = self._indexes[self._need_critical_care]
+
+        healed = self._day_i - self._day_contracted[critical_care_indexes] + \
+                 self._critical_care_start[critical_care_indexes] > self._critical_care_finish[critical_care_indexes]
+
+        healed_indexes = critical_care_indexes[healed]
+
+        self._need_critical_care[healed_indexes] = False
+
+        self._is_infected[healed_indexes] = False
+        self._is_infectious[healed_indexes] = False
+
+        self._illness_days_total[healed_indexes] = self._day_i - self._day_contracted[healed_indexes]
+
+        self._is_immune[healed_indexes] = True
+
     def _heal(self):
         """
         Heals members of the population if they are infected
         """
         ill_indexes = self._indexes[self._is_infected]
+        ill_indexes = ill_indexes[self._health_condition[ill_indexes] > self._hospitalization_percentage[ill_indexes]]
 
         healed = (self._day_i - self._day_contracted[ill_indexes] - self._infectious_start[ill_indexes]) >= abs(
             self._healing_days[ill_indexes]
@@ -651,8 +696,6 @@ class Population:
 
         self._is_infected[healed_indexes] = False
         self._is_infectious[healed_indexes] = False
-        self._need_hospitalization[healed_indexes] = False
-        self._need_critical_care[healed_indexes] = False
 
         self._illness_days_total[healed_indexes] = self._day_i - self._day_contracted[healed_indexes]
 
@@ -667,8 +710,8 @@ class Population:
         if len(ill_indexes) == 0:
             return
 
-        ill_ages = self._age[self._is_infected]
-        probability = self._probability[self._is_infected]
+        ill_ages = self._age[ill_indexes]
+        probability = self._probability[ill_indexes]
 
         for age in self._unique_ages:
             probability[ill_ages == age] = self._virus.get_mortality(age=age) / self._virus.illness_days_mean
@@ -677,6 +720,7 @@ class Population:
 
         self._is_alive[passed_away] = False
         self._is_infected[passed_away] = False
+
         self._need_hospitalization[passed_away] = False
         self._need_critical_care[passed_away] = False
 
