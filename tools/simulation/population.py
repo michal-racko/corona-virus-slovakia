@@ -2,6 +2,7 @@ import time
 import logging
 
 import numpy as np
+import matplotlib.pyplot as pl
 
 try:
     import cupy as cp
@@ -14,9 +15,10 @@ except ImportError:
     logging.warning('Failed to import cupy, using CPU')
 
 from tools.config import Config
-from tools.general import singleton
+from tools.general import singleton, ensure_dir
 from tools.input_data import InputData
 from tools.simulation.virus import Virus
+from tools.plotting.checks import household_age_distribution
 
 
 @singleton
@@ -57,6 +59,8 @@ class Population:
         """
         self._size = 0
 
+        self._virus = virus
+
         # Attributes of cities:
         self._city_ids = None
         self._city_population_sizes = None
@@ -67,7 +71,7 @@ class Population:
         self._city_id = None
         self._indexes = None
 
-        config = Config()
+        self.config = Config()
         input_data = InputData()
 
         city_populations = {
@@ -122,30 +126,40 @@ class Population:
 
         self._need_hospitalization = cp.zeros(self._size).astype(bool)
         self._hospitalization_start = cp.random.normal(
-            config.get('hospitalization_start_mean'),
-            config.get('hospitalization_start_std'),
+            self.config.get('hospitalization_start_mean'),
+            self.config.get('hospitalization_start_std'),
             self._size
         )
 
         self._need_critical_care = cp.zeros(self._size).astype(bool)
         self._critical_care_start = self._hospitalization_start + cp.random.normal(
-            config.get('critical_care_start_mean'),
-            config.get('critical_care_start_std'),
+            self.config.get('critical_care_start_mean'),
+            self.config.get('critical_care_start_std'),
             self._size
         )
 
         self._is_new_case = cp.zeros(self._size).astype(bool)
 
-        self._mean_stochastic_interactions = config.get('population', 'mean_stochastic_interactions')
-        self._mean_periodic_interactions = config.get('population', 'mean_periodic_interactions')
+        self._mean_stochastic_interactions = cp.random.poisson(
+            self.config.get('population', 'mean_stochastic_interactions'),
+            self._size
+        )
+
+        # self._mean_stochastic_interactions[self._age >= 60] = self._mean_stochastic_interactions[self._age >= 60] * 0.2
+
+        self._mean_periodic_interactions = self.config.get('population', 'mean_periodic_interactions')
 
         self._infectious_start = cp.random.normal(
-            config.get('infectious_start_mean'),
-            config.get('infectious_start_std'),
+            self.config.get('infectious_start_mean'),
+            self.config.get('infectious_start_std'),
             self._size
         ).astype(int)
 
-        self._virus = virus
+        self._healing_days = cp.random.normal(
+            self._virus.illness_days_mean,
+            self._virus.illness_days_std,
+            self._size
+        )
 
         self._probability = cp.zeros(self._size)  # Memory placeholder for any individual-based probabilities
 
@@ -158,17 +172,24 @@ class Population:
 
         elderly_indexes = self._indexes[(self._age >= 60) * (dice <= household_data['elderly'][2])]
 
-        splitting_mask = cp.random.random(len(elderly_indexes)) < 0.5
+        current_city_ids = self._city_id[elderly_indexes]
 
-        elderly_first = elderly_indexes[splitting_mask]
-        elderly_second = cp.random.choice(
-            elderly_indexes[~splitting_mask],
-            int(sum(splitting_mask.astype(int)))
-        )
+        meetings = [[], []]
+
+        for city_id in self._city_ids:
+            city_indexes = elderly_indexes[current_city_ids == city_id]
+
+            split_indexes = cp.split(
+                city_indexes[:int(len(city_indexes) / 2) * 2],
+                2
+            )
+
+            for i, s in enumerate(split_indexes):
+                meetings[i].append(s)
 
         self._household_meetings_elderly = {
-            'first': elderly_first,
-            'second': elderly_second
+            'first': cp.hstack(meetings[0]),
+            'second': cp.hstack(meetings[1])
         }
 
         self._household_sizes = cp.ones(self._size)
@@ -183,25 +204,57 @@ class Population:
 
             self._household_sizes[mask] = s
 
+            current_threshold += ratio
+
         self._household_sizes[
-            cp.hstack([elderly_first, elderly_second])
+            cp.hstack([
+                self._household_meetings_elderly['first'],
+                self._household_meetings_elderly['second'],
+            ])
         ] = -1
 
-        for i in range(2, self._max_household_size + 1):
-            current_indexes = self._indexes[self._household_sizes == i]
+        for household_size in range(2, self._max_household_size + 1):
+            current_indexes = self._indexes[self._household_sizes == household_size]
 
             if len(current_indexes) == 0:
                 continue
 
-            shuffled = cp.random.choice(current_indexes, int(len(current_indexes) / i) * i)
+            current_city_ids = self._city_id[current_indexes]
 
-            self._household_meetings[i] = cp.split(shuffled, i)
+            meetings = [[] for i in range(household_size)]
+
+            for city_id in self._city_ids:
+                city_indexes = current_indexes[current_city_ids == city_id]
+
+                split_indexes = cp.split(
+                    city_indexes[:int(len(city_indexes) / household_size) * household_size],
+                    household_size
+                )
+
+                for i, s in enumerate(split_indexes):
+                    meetings[i].append(s)
+
+            self._household_meetings[household_size] = [
+                cp.hstack(m) for m in meetings
+            ]
+
+        self._household_sizes[self._household_sizes == -1] = 2
+
+        check_plot_dir = self.config.get('check_plots')
+
+        ensure_dir(check_plot_dir)
+
+        household_age_distribution(
+            ages=cp.asnumpy(self._age),
+            household_sizes=cp.asnumpy(self._household_sizes),
+            filepath=f'{check_plot_dir}/household-distributions.png'
+        )
 
     def _init_cities(self, city_populations: dict):
         """
         Sets city ids
 
-        :param city_populations:        of the form {<citi_id: int>: <population_size: int>}
+        :param city_populations:        of the form {<city_id: int>: <population_size: int>}
         """
         self._size = int(sum(city_populations.values()))
 
@@ -431,18 +484,19 @@ class Population:
         for cid, prob in city_probs.items():
             self._probability[self._city_id == cid] = prob
 
+        susceptible_indexes = self._indexes[self.get_susceptible()]
+
         if random_seed is None:
-            poisson_mean = self._mean_stochastic_interactions
+            poisson_mean = self._mean_stochastic_interactions[susceptible_indexes]
 
         else:
             poisson_mean = self._mean_periodic_interactions
 
-        susceptible_indexes = self._indexes[self.get_susceptible()]
         probabilities = self._probability[self._is_susceptible]
 
         interaction_multiplicities = cp.random.poisson(
             poisson_mean,
-            len(susceptible_indexes)
+            # len(susceptible_indexes)
         )
 
         for interaction_i in range(int(interaction_multiplicities.max())):
@@ -590,11 +644,7 @@ class Population:
         ill_indexes = self._indexes[self._is_infected]
 
         healed = (self._day_i - self._day_contracted[ill_indexes] - self._infectious_start[ill_indexes]) >= abs(
-            cp.random.normal(
-                self._virus.illness_days_mean,
-                self._virus.illness_days_std,
-                len(ill_indexes)
-            )
+            self._healing_days[ill_indexes]
         )
 
         healed_indexes = ill_indexes[healed]

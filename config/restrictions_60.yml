@@ -1,17 +1,17 @@
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 180
+simulation_days: 160
 
 population:
   mean_periodic_interactions: 0
-  mean_stochastic_interactions: 15
+  mean_stochastic_interactions: 10
 
 # === Parameters of the virus ===
 
 virus:
   name: SARS-CoV2
-  transmission_probability: 0.01325
+  transmission_probability: 0.015
   household_transmission_probability: 0.05
   infectious_days_mean: 6.5
   infectious_days_std: 1
@@ -40,12 +40,12 @@ household_distribution: data/households.json
 
 # === outputs ===
 
-result_file: results/business-as-usual.json
+result_file: results/restrictions-60-elderly-limited.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/business-as-usual
+  dir: plots/restrictions-60-elderly-limited
   cities:
     - Martin
     - Nitra
@@ -58,11 +58,9 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/check/business-as-usual
-
 geographical:
   precision: 500
   timeseries_dir:
-    plots/geographical/business-as-usual
+    plots/geographical/restrictions-60-elderly-limited
 
 n_processes: 12

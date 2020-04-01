@@ -1,17 +1,18 @@
 # === Simulation parameters ===
 
-min_inhabitants: 50000
-simulation_days: 60
+min_inhabitants: 0
+simulation_days: 160
 
 population:
-  mean_periodic_interactions: 10
-  mean_stochastic_interactions: 10
+  mean_periodic_interactions: 0
+  mean_stochastic_interactions: 5
 
 # === Parameters of the virus ===
 
 virus:
   name: SARS-CoV2
   transmission_probability: 0.015
+  household_transmission_probability: 0.05
   infectious_days_mean: 6.5
   infectious_days_std: 1
 
@@ -35,15 +36,16 @@ populations_file: data/sensitive/munic_pop.xlsx
 town_locations_file: data/sensitive/obce1.xlsx
 age_distribution: data/age_distribution.json
 age_symptoms: data/age_symptoms.json
+household_distribution: data/households.json
 
 # === outputs ===
 
-result_file: results/cities-test.json
+result_file: results/restrictions-30-elderly-limited.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/individual-test
+  dir: plots/restrictions-30-elderly-limited
   cities:
     - Martin
     - Nitra
@@ -59,6 +61,6 @@ individual_cities:
 geographical:
   precision: 500
   timeseries_dir:
-    plots/geographical/timeseries-test
+    plots/geographical/restrictions-30-elderly-limited
 
 n_processes: 12

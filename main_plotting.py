@@ -37,14 +37,14 @@ except TypeError:
     config.read(DEFAULT_CONFIG_PATH)
 
 
-def plot_geo_data(day_i):
-    day_string = f'{day_i}'.zfill(3)
-
-    plot_infected(
-        data,
-        day_i=day_i,
-        filepath=f'{geo_timeseries_dir}/infected/{day_string}.png'
-    )
+# def plot_geo_data(day_i):
+#     day_string = f'{day_i}'.zfill(3)
+#
+#     plot_infected(
+#         data,
+#         day_i=day_i,
+#         filepath=f'{geo_timeseries_dir}/infected/{day_string}.png'
+#     )
 
 
 if __name__ == '__main__':
@@ -56,9 +56,9 @@ if __name__ == '__main__':
 
     geo_timeseries_dir = config.get('geographical', 'timeseries_dir')
 
-    pool = Pool(config.get('n_processes'))
-
-    pool.map(plot_geo_data, [i for i in range(config.get('simulation_days'))])
+    # pool = Pool(config.get('n_processes'))
+    #
+    # pool.map(plot_geo_data, [i for i in range(config.get('simulation_days'))])
 
     individual_city_dir = config.get('individual_cities', 'dir')
 
