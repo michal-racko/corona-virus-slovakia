@@ -1,17 +1,21 @@
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 220
+simulation_days: 240
+n_tests_daily: 1500
 
 population:
   mean_periodic_interactions: 0
   mean_stochastic_interactions: 15
+  respect_quarantine: 0.6  # ratio of people with symptoms, who stay at home
+  ratio_symptomatic: 0.6
+
 
 # === Parameters of the virus ===
 
 virus:
   name: SARS-CoV2
-  transmission_probability: 0.017
+  transmission_probability: 0.0165
   household_transmission_probability: 0.025
   infectious_days_mean: 6.5
   infectious_days_std: 1
@@ -46,12 +50,12 @@ household_distribution: data/households.json
 
 # === outputs ===
 
-result_file: results/blackout.json
+result_file: results/current-restrictions.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/blackout
+  dir: plots/current-restrictions
   cities:
     - Martin
     - Nitra
@@ -64,11 +68,11 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/blackout
+check_plots: plots/current-restrictions/checks
 
 geographical:
   precision: 500
   timeseries_dir:
-    plots/geographical/blackout
+    plots/geographical/current-restrictions
 
 n_processes: 12

@@ -17,7 +17,7 @@ from tools.config import Config
 from tools.general import singleton, ensure_dir
 from tools.input_data import InputData
 from tools.simulation.virus import Virus
-from tools.plotting.checks import household_age_distribution
+from tools.plotting.checks import household_age_distribution, age_distribution, time_ranges
 
 
 @singleton
@@ -109,15 +109,19 @@ class Population:
         for age, percentage in input_data.symptoms['hospitalized'].items():
             self._hospitalization_percentage[self._age == age] = percentage * \
                                                                  input_data.symptoms['hospitalized'][
-                                                                     age] * 0.6  # 60% symptoms (TODO: config)
+                                                                     age] * self.config.get('population',
+                                                                                            'ratio_symptomatic')
 
         self._critical_care_percentage = cp.zeros(self._size).astype(float)
 
         for age, percentage in input_data.symptoms['critical_care'].items():
             self._critical_care_percentage[self._age == age] = percentage * \
-                                                               input_data.symptoms['critical_care'][age] * 0.6
+                                                               input_data.symptoms['critical_care'][
+                                                                   age] * self.config.get('population',
+                                                                                          'ratio_symptomatic')
 
-        self._is_symptomatic = cp.ones(self._size).astype(bool) * 0.6  # Defines whether symptomatic once infected
+        self._is_symptomatic = cp.random.random(self._size) <= self.config.get('population', 'ratio_symptomatic')
+        self._respects_quarantine = cp.random.random(self._size) <= self.config.get('population', 'respect_quarantine')
 
         sympt_dice = cp.random.random(self._size)
 
@@ -130,6 +134,10 @@ class Population:
             self.config.get('hospitalization_start_std'),
             self._size
         )
+
+        self._hospitalization_start[
+            self._health_condition > self._hospitalization_percentage
+            ] = -1  # won't be hospitalized
 
         self._hospitalization_finish = self._hospitalization_start + cp.random.normal(
             self.config.get('hospitalization_length_mean'),
@@ -152,12 +160,12 @@ class Population:
 
         self._is_new_case = cp.zeros(self._size).astype(bool)
 
-        self._mean_stochastic_interactions = cp.random.poisson(
-            self.config.get('population', 'mean_stochastic_interactions'),
+        self._mean_stochastic_interactions = self.config.get('population', 'mean_stochastic_interactions')
+
+        self._stochastic_interactions = cp.random.poisson(
+            self._mean_stochastic_interactions,
             self._size
         )
-
-        # self._mean_stochastic_interactions[self._age >= 60] = self._mean_stochastic_interactions[self._age >= 60] * 0.2
 
         self._mean_periodic_interactions = self.config.get('population', 'mean_periodic_interactions')
 
@@ -165,7 +173,7 @@ class Population:
             self.config.get('infectious_start_mean'),
             self.config.get('infectious_start_std'),
             self._size
-        ).astype(int)
+        ).astype(float)
 
         self._healing_days = cp.random.normal(
             self._virus.illness_days_mean,
@@ -178,6 +186,30 @@ class Population:
         self._day_i = 0
 
         self._update_infection_probs()
+
+        self._plot_time_ranges()
+
+    def _plot_time_ranges(self):
+        check_plot_dir = self.config.get('check_plots')
+
+        ensure_dir(check_plot_dir)
+
+        need_hospital = self._health_condition <= self._hospitalization_percentage
+        need_critical_care = self._health_condition <= self._critical_care_percentage
+
+        healing = self._infectious_start + self._healing_days
+
+        healing[need_hospital] = self._hospitalization_finish[need_hospital]
+        healing[need_critical_care] = self._critical_care_finish[need_critical_care]
+
+        time_ranges(
+            infectious=cp.asnumpy(self._infectious_start),
+            healing=cp.asnumpy(healing),
+            hospitalization=cp.asnumpy(self._hospitalization_start[need_hospital]),
+            critical_care=cp.asnumpy(self._critical_care_start[need_critical_care]),
+            filepath=f'{check_plot_dir}/time-ranges.png'
+
+        )
 
     def _init_households(self, household_data: dict):
         dice = cp.random.random(self._size)
@@ -256,10 +288,17 @@ class Population:
 
         ensure_dir(check_plot_dir)
 
+        ages = cp.asnumpy(self._age)
+
         household_age_distribution(
-            ages=cp.asnumpy(self._age),
+            ages=ages,
             household_sizes=cp.asnumpy(self._household_sizes),
             filepath=f'{check_plot_dir}/household-distributions.png'
+        )
+
+        age_distribution(
+            ages,
+            filepath=f'{check_plot_dir}/age-distributions.png'
         )
 
     def _init_cities(self, city_populations: dict):
@@ -499,7 +538,7 @@ class Population:
         susceptible_indexes = self._indexes[self.get_susceptible()]
 
         if random_seed is None:
-            poisson_mean = self._mean_stochastic_interactions[susceptible_indexes]
+            poisson_mean = self._stochastic_interactions[susceptible_indexes]
 
         else:
             poisson_mean = self._mean_periodic_interactions
@@ -626,6 +665,27 @@ class Population:
 
         self._is_infectious[infectious] = True
 
+        infectious_indexes = self._indexes[self._is_infectious]
+
+        # Put into quarantine those who have symptoms for more than a day and respect the quarantine
+        in_quarantine = (self._day_i - self._day_contracted[infectious_indexes] -
+                         self._infectious_start[infectious_indexes] >= 1) * \
+                        self._is_symptomatic[infectious_indexes] * self._respects_quarantine[infectious_indexes]
+
+        self._is_infectious[infectious_indexes[in_quarantine]] = False
+
+        try:
+            prob_tested = self.config.get('n_tests_daily') / (
+                    int(self._is_infectious.astype(int).sum()) * self._mean_stochastic_interactions
+            )
+
+        except ZeroDivisionError:
+            prob_tested = 0
+
+        in_quarantine = cp.random.random(len(infectious_indexes)) <= prob_tested
+
+        self._is_infectious[infectious_indexes[in_quarantine]] = False
+
     def _hospitalize(self):
         infected_indexes = self._indexes[self._is_infected]
 
@@ -649,6 +709,7 @@ class Population:
                              )
 
         self._need_critical_care[infected_indexes[critical_care_mask]] = True
+        self._need_hospitalization[infected_indexes[critical_care_mask]] = False
 
         hospitalized_indexes = self._indexes[self._need_hospitalization]
 
@@ -704,7 +765,9 @@ class Population:
         """
         Kills a portion of the infected population
         """
-        ill_indexes = self._indexes[self._is_infected]
+        ill_indexes = self._indexes[self._is_infectious + self._need_hospitalization]
+
+        hospitalization_start = self._hospitalization_start[ill_indexes]
 
         if len(ill_indexes) == 0:
             return
@@ -713,7 +776,13 @@ class Population:
         probability = self._probability[ill_indexes]
 
         for age in self._unique_ages:
-            probability[ill_ages == age] = self._virus.get_mortality(age=age) / self._virus.illness_days_mean
+            probability[ill_ages == age] = self._virus.get_mortality(age=age)
+
+        # get daily probabilities:
+        probability[hospitalization_start < 0] = probability[hospitalization_start < 0] / self._virus.illness_days_mean
+        probability[hospitalization_start >= 0] = probability[hospitalization_start >= 0] / self.config.get(
+            'hospitalization_length_mean'
+        )
 
         passed_away = ill_indexes[cp.random.random(len(ill_indexes)) <= probability]
 
@@ -724,14 +793,11 @@ class Population:
         self._need_critical_care[passed_away] = False
 
     def _update_restrictions(self):
-        if self._day_i == 20:
-            self._mean_stochastic_interactions = self._mean_stochastic_interactions * 0.5
+        if self._day_i == 10:
+            self._stochastic_interactions = self._stochastic_interactions * 0.52
+            self._mean_stochastic_interactions *= 0.52
 
-        if self._day_i == 40:
-            self._mean_stochastic_interactions = self._mean_stochastic_interactions * 0.1
-
-        if self._day_i == 100:
-            self._mean_stochastic_interactions = self._mean_stochastic_interactions * 20
+            self._virus.household_transmission_probability *= 1.1
 
     def next_day(self):
         """

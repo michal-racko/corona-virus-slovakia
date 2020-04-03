@@ -75,7 +75,12 @@ if __name__ == '__main__':
         if day_i % 10 == 0:
             logging.info(f'day: {day_i}')
 
-        _mig_matrix = np.random.poisson(mig_matrix)
+        if day_i < 20:
+            _mig_matrix = np.random.poisson(mig_matrix)
+
+        else:
+            _mig_matrix = np.random.poisson(mig_matrix) * 0.7
+
         _mig_matrix = np.diag(_mig_matrix) - np.identity(len(_mig_matrix))
 
         population.travel(_mig_matrix)

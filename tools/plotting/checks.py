@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as pl
 
+from matplotlib.patches import Rectangle
+
 
 def household_age_distribution(ages, household_sizes, filepath):
     histogram, _, _, _ = pl.hist2d(
@@ -25,6 +27,61 @@ def household_age_distribution(ages, household_sizes, filepath):
     pl.title('Simulated households', fontsize=20)
     pl.ylabel('Household size', fontsize=16)
     pl.xlabel('Age', fontsize=16)
+
+    pl.savefig(filepath)
+    pl.close()
+
+
+def age_distribution(ages, filepath):
+    ages, counts = np.unique(ages, return_counts=True)
+
+    pl.bar(
+        ages,
+        counts,
+        width=10,
+        color='tab:blue'
+    )
+
+    pl.title('Simulated ages', fontsize=20)
+    pl.xlabel('Age', fontsize=16)
+
+    pl.savefig(filepath)
+    pl.close()
+
+
+def time_ranges(infectious, healing, hospitalization, critical_care, filepath):
+    colors = [
+        'tab:blue',
+        'tab:green',
+        'tab:orange',
+        'tab:red'
+    ]
+
+    labels = [
+        'infectiousness start',
+        'fully recovered',
+        'hospitalization start',
+        'critical care start',
+    ]
+
+    pl.hist(
+        [
+            infectious,
+            healing,
+            hospitalization,
+            critical_care,
+        ],
+        color=colors,
+        histtype='stepfilled',
+        density=True,
+        alpha=0.7,
+        bins=50,
+        range=(0, 25)
+    )
+
+    handles = [Rectangle((0, 0), 1, 1, color=c, ec="k") for c in colors]
+    pl.legend(handles, labels)
+    pl.xlabel('Days since infection', fontsize=16)
 
     pl.savefig(filepath)
     pl.close()

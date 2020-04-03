@@ -30,6 +30,6 @@ def plot_infected(data: GeographicalResult, day_i=-1, filepath=None):
         cmap='Reds',
         alpha=0.85,
         title=title,
-        values_range=(0, 1400),
+        # values_range=(0, 1000000),
         filepath=filepath
     )

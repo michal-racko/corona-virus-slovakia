@@ -142,7 +142,10 @@ class Map:
         cf = ax1.contourf(X, Y, Z, alpha=alpha, cmap=cmap, vmin=vmin, vmax=vmax)
         cbar = fig.colorbar(cf, ax=ax1)
 
-        cbar.set_clim(vmin, vmax)
+        cbar.set_ticks(np.linspace(vmin, vmax, 10))
+        cbar.set_ticklabels(np.linspace(vmin, vmax, 10))
+
+        # cbar.set_clim(vmin, vmax)
 
         if hide_ticks:
             pl.xticks([])
