@@ -7,7 +7,18 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s'
 )
 
-import numpy as np
+try:
+    import cupy as cp
+
+    cuda = True
+    logging.info('Using GPU')
+
+except ImportError:
+    import numpy as cp
+
+    cuda = False
+    logging.warning('Failed to import cupy, using CPU')
+
 import matplotlib.pyplot as pl
 
 from tools.config import Config
@@ -76,35 +87,23 @@ if __name__ == '__main__':
             logging.info(f'day: {day_i}')
 
         if day_i < 20:
-            _mig_matrix = np.random.poisson(mig_matrix)
+            _mig_matrix = cp.random.poisson(mig_matrix)
 
         else:
-            _mig_matrix = np.random.poisson(mig_matrix) * 0.7
+            _mig_matrix = cp.random.poisson(mig_matrix) * 0.7
 
-        _mig_matrix = np.diag(_mig_matrix) - np.identity(len(_mig_matrix))
+        _mig_matrix = cp.diag(_mig_matrix) - cp.identity(len(_mig_matrix))
 
         population.travel(_mig_matrix)
         population.next_day()
 
-        _, susceptible = population.get_susceptible_by_city()
-        _, infected = population.get_infected_by_city()
-        _, immune = population.get_immune_by_city()
-        _, dead = population.get_dead_by_city()
-        _, hospitalized = population.get_hospitalized_by_city()
-        _, critical_care = population.get_critical_care_by_city()
-        _, new_cases = population.get_new_cases_by_city()
+    results.set_data(
+        population.get_results()
+    )
 
-        results.add_susceptible(susceptible)
-        results.add_infected(infected)
-        results.add_immune(immune)
-        results.add_dead(dead)
-        results.add_hospitalized(hospitalized)
-        results.add_critical_care(critical_care)
-        results.add_new_cases(new_cases)
-
-        results.to_json(results_file)
-
-    pl.hist(population.get_dead_ages())
-    pl.show()
+    results.to_json(results_file)
 
     logging.info(f'Simulation done in {time.time() - prior:.2e} sec')
+    #
+    # pl.hist(population.get_dead_ages())
+    # pl.show()

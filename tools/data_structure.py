@@ -14,14 +14,12 @@ class TimeSeriesResult:
                  simulation_days: list,
                  infected: list,
                  susceptible: list,
-                 new_cases: list,
                  immune: list,
                  dead: list,
                  hospitalized: list,
                  critical_care: list):
         assert len(infected) == len(simulation_days)
         assert len(susceptible) == len(simulation_days)
-        assert len(new_cases) == len(simulation_days)
         assert len(immune) == len(simulation_days)
         assert len(dead) == len(simulation_days)
         assert len(hospitalized) == len(simulation_days)
@@ -30,11 +28,18 @@ class TimeSeriesResult:
         self.days = simulation_days
         self.infected = infected
         self.susceptible = susceptible
-        self.new_cases = new_cases
+        self.new_cases = None
         self.immune = immune
         self.dead = dead
         self.hospitalized = hospitalized
         self.critical_care = critical_care
+
+        self._prepare_new_cases()
+
+    def _prepare_new_cases(self):
+        infected = np.zeros(len(self.infected) + 1)
+
+        self.new_cases = np.diff(infected)
 
     def to_json(self, filepath: str):
         """
@@ -73,8 +78,7 @@ class GeographicalResult:
             'immune': [],
             'dead': [],
             'hospitalized': [],
-            'critical_care': [],
-            'new_cases': [],
+            'critical_care': []
         }
 
     def to_json(self, filepath: str):
@@ -153,9 +157,6 @@ class GeographicalResult:
     def add_critical_care(self, counts):
         self._data['critical_care'].append(counts)
 
-    def add_new_cases(self, counts):
-        self._data['new_cases'].append(counts)
-
     def _get_parameter(self,
                        parameter_key: str,
                        day_i: int,
@@ -197,7 +198,6 @@ class GeographicalResult:
             simulation_days=[i for i in range(len(np.array(self._data['infected']).T[city_index]))],
             infected=np.array(self._data['infected']).T[city_index],
             susceptible=np.array(self._data['susceptible']).T[city_index],
-            new_cases=np.array(self._data['new_cases']).T[city_index],
             immune=np.array(self._data['immune']).T[city_index],
             dead=np.array(self._data['dead']).T[city_index],
             hospitalized=np.array(self._data['hospitalized']).T[city_index],
@@ -209,7 +209,6 @@ class GeographicalResult:
             simulation_days=[i for i in range(len(np.array(self._data['infected']).T[0]))],
             infected=np.array(self._data['infected']).sum(axis=1),
             susceptible=np.array(self._data['susceptible']).sum(axis=1),
-            new_cases=np.array(self._data['new_cases']).sum(axis=1),
             immune=np.array(self._data['immune']).sum(axis=1),
             dead=np.array(self._data['dead']).sum(axis=1),
             hospitalized=np.array(self._data['hospitalized']).sum(axis=1),
