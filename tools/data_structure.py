@@ -139,24 +139,6 @@ class GeographicalResult:
         self._longitudes = [float(l) for l in longitudes]
         self._latitudes = [float(l) for l in latitudes]
 
-    def add_susceptible(self, counts):
-        self._data['susceptible'].append(counts)
-
-    def add_infected(self, counts):
-        self._data['infected'].append(counts)
-
-    def add_immune(self, counts):
-        self._data['immune'].append(counts)
-
-    def add_dead(self, counts):
-        self._data['dead'].append(counts)
-
-    def add_hospitalized(self, counts):
-        self._data['hospitalized'].append(counts)
-
-    def add_critical_care(self, counts):
-        self._data['critical_care'].append(counts)
-
     def _get_parameter(self,
                        parameter_key: str,
                        day_i: int,
