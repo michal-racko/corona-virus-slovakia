@@ -1,7 +1,7 @@
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 240
+simulation_days: 160
 n_tests_daily: 1500
 
 population:
