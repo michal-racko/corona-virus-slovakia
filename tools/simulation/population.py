@@ -1,5 +1,4 @@
 import time
-import logging
 
 try:
     import cupy as cp
@@ -22,104 +21,66 @@ from tools.plotting.checks import household_age_distribution, age_distribution, 
 class Population:
     """
     Represents the entire population used in the simulation.
-
-    attributes:
-        - size                  <int>               population size
-
-        - _is_infected          <cp.ndarray<bool>>  defines whether currently infected
-
-        - _is_infectious        <cp.ndarray<bool>>  defines whether currently infectious
-
-        - _city_id              <cp.ndarray<int>>   defines which city each individual belongs to
-
-        - _household_id         <cp.ndarray<int>>   defines which household each individual belongs to
-
-        - _illness_days_total   <cp.ndarray<int>>   total number of days it will have taken
-                                                    to recover (-1 means healthly)
-
-        - _day_contracted       <cp.ndarray<int>>   day_i when individuals contracted the illness
-                                                    the illness (-1 means healthy)
-
-        - _is_alive             <cp.ndarray<bool>>  defines whether live or dead
-
-        - _is_susceptible       <cp.ndarray<bool>>  defines whether susceptible
-
-        - _is_immune            <cp.ndarray<bool>>  defines whether has build immunity
-
-        - _is_new_case          <cp.ndarray<bool>>  True if infected during the current day
     """
 
     def __init__(self,
                  virus: Virus):
-        """
-        :param virus:                               current virus type
-        """
         self._size = 0
 
         self._virus = virus
+        self.config = Config()
 
         input_data = InputData()
 
-        # Attributes of cities:
+        # === Attributes of cities:
         self._city_ids = None
         self._city_population_sizes = None
         self._city_infection_probs = None
         self._city_infected_counts = None
         self._city_populations = {
-            i: p for i, p in zip(input_data.get_city_ids(), input_data.get_population_sizes())
+            i: p for i, p in zip(
+                input_data.get_city_ids(),
+                input_data.get_population_sizes()
+            )
         }
 
-        # Attributes of individuals:
+        # === Attributes of individuals:
         self._city_id = None
-        self._indexes = None
-
-        self.config = Config()
+        self._indices = None
 
         self._init_cities()
 
-        self._age = cp.zeros(self._size).astype(int)
-
-        self._init_ages(input_data.age_distribution)
-
-        self._unique_ages = [int(a) for a in cp.unique(self._age)]
-
-        self._household_meetings = {}
-        self._household_meetings_elderly = None
-        self._household_sizes = None
-        self._max_household_size = None
-
-        self._init_households(input_data.household_data)
-
         self._is_alive = cp.ones(self._size).astype(bool)
         self._is_immune = cp.zeros(self._size).astype(bool)
-
+        self._is_susceptible = cp.ones(self._size).astype(bool)
         self._is_infected = cp.zeros(self._size).astype(bool)
         self._is_infectious = cp.zeros(self._size).astype(bool)
+
         self._illness_days_total = cp.ones(self._size) * -1
         self._day_contracted = cp.ones(self._size) * -1
 
-        self._is_susceptible = cp.ones(self._size).astype(bool)
+        self._respects_quarantine = cp.random.random(self._size) <= self.config.get(
+            'population',
+            'respect_quarantine'
+        )
+        self._is_in_quarantine = cp.zeros(self._size).astype(bool)
+
+        self._age = cp.zeros(self._size).astype(int)
+        self._unique_ages = None
+
+        self._init_ages(input_data.age_distribution)
 
         self._health_condition = cp.random.random(self._size).astype(float)
 
-        self._hospitalization_percentage = cp.zeros(self._size).astype(float)
+        # === Meeting patterns:
+        self._mean_stochastic_interactions = self.config.get('population', 'mean_stochastic_interactions')
 
-        for age, percentage in input_data.symptoms['hospitalized'].items():
-            self._hospitalization_percentage[self._age == age] = percentage * input_data.symptoms['symptomatic'][age]
+        self._stochastic_interactions = cp.random.poisson(
+            self._mean_stochastic_interactions,
+            self._size
+        )
 
-        self._critical_care_percentage = cp.zeros(self._size).astype(float)
-
-        for age, percentage in input_data.symptoms['critical_care'].items():
-            self._critical_care_percentage[self._age == age] = percentage * input_data.symptoms['symptomatic'][age]
-
-        self._death_percentage = cp.zeros(self._size).astype(float)
-
-        for age, percentage in input_data.symptoms['fatal'].items():
-            self._death_percentage[self._age == age] = percentage
-
-        self._respects_quarantine = cp.random.random(self._size) <= self.config.get('population', 'respect_quarantine')
-        self._is_in_quarantine = cp.zeros(self._size).astype(bool)
-
+        # === Symptoms:
         sympt_dice = cp.random.random(self._size)
 
         self._is_symptomatic = cp.zeros(self._size).astype(bool)
@@ -127,16 +88,38 @@ class Population:
         for age, percentage in input_data.symptoms['symptomatic'].items():
             self._is_symptomatic[self._age == age] = (sympt_dice[self._age == age] <= percentage)
 
+        self._hospitalization_percentage = cp.zeros(self._size).astype(float)
+
+        for age, percentage in input_data.symptoms['hospitalized'].items():
+            self._hospitalization_percentage[self._age == age] = percentage * \
+                                                                 input_data.symptoms['symptomatic'][age]
+
+        self._critical_care_percentage = cp.zeros(self._size).astype(float)
+
+        for age, percentage in input_data.symptoms['critical_care'].items():
+            self._critical_care_percentage[self._age == age] = percentage * \
+                                                               input_data.symptoms['symptomatic'][age]
+
+        self._death_percentage = cp.zeros(self._size).astype(float)
+
+        for age, percentage in input_data.symptoms['fatal'].items():
+            self._death_percentage[self._age == age] = percentage
+
+        # === Attributes of households:
+        self._household_meetings = {}
+        self._household_meetings_elderly = None
+        self._household_sizes = None
+        self._max_household_size = None
+
+        self._init_households(input_data.household_data)
+
+        # === Medical needs:
         self._need_hospitalization = cp.zeros(self._size).astype(bool)
         self._hospitalization_start = cp.random.normal(
             self.config.get('hospitalization_start_mean'),
             self.config.get('hospitalization_start_std'),
             self._size
         )
-
-        self._hospitalization_start[
-            self._health_condition > self._hospitalization_percentage
-            ] = -1  # won't be hospitalized
 
         self._hospitalization_finish = self._hospitalization_start + cp.random.normal(
             self.config.get('hospitalization_length_mean'),
@@ -157,15 +140,6 @@ class Population:
             self._size
         )
 
-        self._mean_stochastic_interactions = self.config.get('population', 'mean_stochastic_interactions')
-
-        self._stochastic_interactions = cp.random.poisson(
-            self._mean_stochastic_interactions,
-            self._size
-        )
-
-        self._mean_periodic_interactions = self.config.get('population', 'mean_periodic_interactions')
-
         self._infectious_start = cp.random.normal(
             self.config.get('infectious_start_mean'),
             self.config.get('infectious_start_std'),
@@ -184,6 +158,8 @@ class Population:
 
         self._plot_time_ranges()
 
+        # === Result placeholders:
+
         simulation_days = self.config.get('simulation_days')
 
         self._statistics = {
@@ -196,7 +172,14 @@ class Population:
         }
 
     def _plot_time_ranges(self):
-        check_plot_dir = self.config.get('check_plots')
+        """
+        Plots histograms of time ranges as used in the simulation.
+
+        Figure will be saved to the directory specified in the config file (check_plots)
+        """
+        check_plot_dir = self.config.get(
+            'check_plots'
+        )
 
         ensure_dir(check_plot_dir)
 
@@ -209,29 +192,35 @@ class Population:
         healing[need_critical_care] = self._critical_care_finish[need_critical_care]
 
         if cuda:
-            time_ranges(
-                infectious=cp.asnumpy(self._infectious_start),
-                healing=cp.asnumpy(healing),
-                hospitalization=cp.asnumpy(self._hospitalization_start[need_hospital]),
-                critical_care=cp.asnumpy(self._critical_care_start[need_critical_care]),
-                filepath=f'{check_plot_dir}/time-ranges.png'
-
-            )
+            infectious = cp.asnumpy(self._infectious_start)
+            healing = cp.asnumpy(healing)
+            hospitalization = cp.asnumpy(self._hospitalization_start[need_hospital])
+            critical_care = cp.asnumpy(self._critical_care_start[need_critical_care])
 
         else:
-            time_ranges(
-                infectious=self._infectious_start,
-                healing=healing,
-                hospitalization=self._hospitalization_start[need_hospital],
-                critical_care=self._critical_care_start[need_critical_care],
-                filepath=f'{check_plot_dir}/time-ranges.png'
+            infectious = self._infectious_start
+            healing = healing
+            hospitalization = self._hospitalization_start[need_hospital]
+            critical_care = self._critical_care_start[need_critical_care]
 
-            )
+        time_ranges(
+            infectious=infectious,
+            healing=healing,
+            hospitalization=hospitalization,
+            critical_care=critical_care,
+            filepath=f'{check_plot_dir}/time-ranges.png'
+
+        )
 
     def _init_households(self, household_data: dict):
+        """
+        Initializes parameters for households.
+
+        Seniors living in pairs are simulated separately.
+        """
         dice = cp.random.random(self._size)
 
-        elderly_indexes = self._indexes[(self._age >= 60) * (dice <= household_data['elderly'][2])]
+        elderly_indexes = self._indices[(self._age >= 60) * (dice <= household_data['elderly'][2])]
 
         current_city_ids = self._city_id[elderly_indexes]
 
@@ -252,6 +241,8 @@ class Population:
             'first': cp.hstack(meetings[0]),
             'second': cp.hstack(meetings[1])
         }
+
+        # === split the rest of the population into households:
 
         self._household_sizes = cp.ones(self._size)
 
@@ -275,7 +266,7 @@ class Population:
         ] = -1
 
         for household_size in range(2, self._max_household_size + 1):
-            current_indexes = self._indexes[self._household_sizes == household_size]
+            current_indexes = self._indices[self._household_sizes == household_size]
 
             if len(current_indexes) == 0:
                 continue
@@ -301,6 +292,8 @@ class Population:
 
         self._household_sizes[self._household_sizes == -1] = 2
 
+        # === plot the distribution of households:
+
         check_plot_dir = self.config.get('check_plots')
 
         ensure_dir(check_plot_dir)
@@ -325,9 +318,13 @@ class Population:
         )
 
     def _init_cities(self):
+        """
+        Initializes city ids for simulated people
+        based on population sizes from the input data
+        """
         self._size = int(sum(self._city_populations.values()))
 
-        self._indexes = cp.arange(self._size).astype(int)
+        self._indices = cp.arange(self._size).astype(int)
 
         self._city_id = cp.ones(self._size) * -1
 
@@ -349,11 +346,17 @@ class Population:
         self._city_population_sizes = cp.array(self._city_population_sizes)
 
     def _init_ages(self, age_data: dict):
+        """
+        Initializes ages for simulated people
+        based on population sizes from the input data
+        """
         age_dice = cp.random.random(self._size)
 
         age_total = sum(age_data.values())
 
         current_threshold = 0
+
+        self._unique_ages = []
 
         for age, age_population in age_data.items():
             age_mask = (current_threshold <= age_dice) * (age_dice < current_threshold + age_population / age_total)
@@ -362,8 +365,7 @@ class Population:
 
             current_threshold += age_population / age_total
 
-    def __len__(self):
-        return self._size
+            self._unique_ages.append(age)
 
     def _update_statistics(self):
         """
@@ -388,6 +390,10 @@ class Population:
         self._statistics['critical_care'][self._day_i][:] = critical_care
 
     def get_results(self) -> dict:
+        """
+        :returns:               json-serializable dict of results in the format required by
+                                tools/data_structure.GeographicalResult
+        """
         return {
             'susceptible': self._statistics['susceptible'].tolist(),
             'infected': self._statistics['infected'].tolist(),
@@ -409,7 +415,9 @@ class Population:
 
     def get_susceptible_by_city(self, as_json=False) -> tuple:
         """
-        :returns:           lists of city_ids and susceptible people counts respectively
+        :param as_json:     if True returns a json-serializable values, otherwise cp/np.ndarray
+
+        :returns:           tuple of city_ids and susceptible people counts respectively
         """
         susceptible = self._city_id[self._is_susceptible]
 
@@ -429,7 +437,9 @@ class Population:
 
     def get_infected_by_city(self, as_json=False) -> tuple:
         """
-        :returns:           lists of city_ids and infected people counts respectively
+        :param as_json:     if True returns a json-serializable values, otherwise cp/np.ndarray
+
+        :returns:           tuple of city_ids and infected people counts respectively
         """
         infected = self._city_id[self._is_infected]
 
@@ -449,7 +459,9 @@ class Population:
 
     def get_immune_by_city(self, as_json=False) -> tuple:
         """
-        :returns:           lists of city_ids and infected people counts respectively
+        :param as_json:     if True returns a json-serializable values, otherwise cp/np.ndarray
+
+        :returns:           tuple of city_ids and infected people counts respectively
         """
         immune = self._city_id[self._is_immune]
 
@@ -469,7 +481,9 @@ class Population:
 
     def get_dead_by_city(self, as_json=False) -> tuple:
         """
-        :returns:           lists of city_ids and infected people counts respectively
+        :param as_json:     if True returns a json-serializable values, otherwise cp/np.ndarray
+
+        :returns:           tuple of city_ids and infected people counts respectively
         """
         dead = self._city_id[~self._is_alive]
 
@@ -485,6 +499,11 @@ class Population:
         return self._sort_by_city_ids(city_ids, values, as_json=as_json)
 
     def get_hospitalized_by_city(self, as_json=False) -> tuple:
+        """
+        :param as_json:     if True returns a json-serializable values, otherwise cp/np.ndarray
+
+        :returns:           tuple of city_ids and hospitalized people counts respectively
+        """
         hospitalized = self._city_id[self._need_hospitalization]
 
         if len(hospitalized) == 0:
@@ -499,6 +518,11 @@ class Population:
         return self._sort_by_city_ids(city_ids, values, as_json=as_json)
 
     def get_critical_care_by_city(self, as_json=False) -> tuple:
+        """
+        :param as_json:     if True returns a json-serializable values, otherwise cp/np.ndarray
+
+        :returns:           tuple of city_ids and people-at-critical-care counts respectively
+        """
         critical_care = self._city_id[self._need_critical_care]
 
         if len(critical_care) == 0:
@@ -524,9 +548,11 @@ class Population:
 
     def _sort_by_city_ids(self, city_ids, values, dtype=None, default=0, as_json=False) -> tuple:
         """
-        Sorts the inputs such that they are ordered by the city_ids defined in the constructor
+        Sorts the inputs such that they are ordered by the city_ids as defined in the constructor
 
-        :param city_ids:        City ids as returned byt the unique functions
+        :param as_json:         if True returns a json-serializable values, otherwise cp/np.ndarray
+
+        :param city_ids:        city ids as returned byt the unique functions
 
         :param values:          values as returned byt the unique functions
 
@@ -554,7 +580,8 @@ class Population:
 
     def _update_infection_probs(self, random_seed=None):
         """
-        Updates probability of infection based on how many inhabitants are infectious
+        Updates probability of infection based on how many inhabitants
+        are infectious each city
         """
         if random_seed is None:
             self._reset_random_seed()
@@ -562,34 +589,23 @@ class Population:
         else:
             cp.random.seed(random_seed)
 
-        logging.debug('infecious_city_ids')
-
         infecious_city_ids = self._city_id[self._is_infectious]
-
-        logging.debug('_city_infected_counts')
 
         if len(infecious_city_ids) == 0:
             self._city_infected_counts = cp.zeros(len(self._city_ids))
 
         else:
-            logging.debug('city_ids, infected_counts')
-
             city_ids, infected_counts = cp.unique(infecious_city_ids, return_counts=True)
 
-            logging.debug('_city_infected_counts')
-
             _, self._city_infected_counts = self._sort_by_city_ids(city_ids, infected_counts, as_json=False)
-
-        logging.debug('_city_infection_probs')
 
         self._city_infection_probs = self._city_infected_counts / self._city_population_sizes * \
                                      self._virus.transmission_probability
 
-        logging.debug('infection_probs done')
-
     def travel(self, migration_matrix: cp.ndarray):
         """
-        Increases probability of infection based on how many infected inhabitants have come to the given cities
+        Increases probability of infection based on how many infected people
+        have come to the given cities
 
         :param migration_matrix:    matrix containing numbers of people travelling among cities
         """
@@ -601,7 +617,8 @@ class Population:
 
     def _spread_in_cities(self, random_seed=None):
         """
-        Infects individuals in the given cities by letting them interact with current infection probabilities.
+        Infects individuals in the given cities by letting them interact
+        with current infection probabilities.
 
         :param random_seed:         random seed to be used
         """
@@ -609,6 +626,9 @@ class Population:
             self._reset_random_seed()
 
         else:
+            raise NotImplementedError(
+                'Moved to households, shall be redefined later'
+            )
             cp.random.seed(random_seed)
 
         city_probs = {cid: prob for cid, prob in zip(self._city_ids, self._city_infection_probs)}
@@ -622,13 +642,9 @@ class Population:
 
             current_offset += city_population
 
-        susceptible_indexes = self._indexes[self.get_susceptible()]
+        susceptible_indexes = self._indices[self.get_susceptible()]
 
-        if random_seed is None:
-            poisson_mean = self._stochastic_interactions[susceptible_indexes]
-
-        else:
-            poisson_mean = self._mean_periodic_interactions
+        poisson_mean = self._stochastic_interactions[susceptible_indexes]
 
         susceptible_probabilities = probabilities[self._is_susceptible]
 
@@ -650,9 +666,11 @@ class Population:
             self._is_infected[infected] = True
             self._day_contracted[infected] = self._day_i
 
-        logging.debug('done')
-
     def _spread_in_households(self):
+        """
+        Infects individuals in households by letting them interact
+        with current infection probabilities.
+        """
         first_infectious = self._is_infectious[self._household_meetings_elderly['first']]
         first_susceptible = self._is_susceptible[self._household_meetings_elderly['first']]
 
@@ -714,7 +732,7 @@ class Population:
         self.get_susceptible()
 
         for cid, count in zip(city_ids, infection_counts):
-            susceptible = self._indexes[self._is_susceptible * (self._city_id == cid)]
+            susceptible = self._indices[self._is_susceptible * (self._city_id == cid)]
 
             if count < len(susceptible):
                 newly_infected = cp.random.choice(susceptible, count, replace=False)
@@ -725,32 +743,11 @@ class Population:
             self._is_infected[newly_infected] = True
             self._day_contracted[newly_infected] = self._day_i
 
-    def infect_random(self, n=None, random_seed=None):
-        """
-        Infects n randomly selected people
-        """
-        if random_seed is None:
-            self._reset_random_seed()
-
-        else:
-            cp.random.seed(random_seed)
-
-        susceptible = self._indexes.copy()
-        susceptible[~self.get_susceptible()] = -1
-
-        if n < self._size:
-            newly_infected = cp.random.choice(susceptible, n, replace=False)
-
-        else:
-            newly_infected = susceptible
-
-        newly_infected = newly_infected[newly_infected >= 0]
-
-        self._is_infected[newly_infected] = True
-        self._day_contracted[newly_infected] = self._day_i
-
     def _update_infectiousness(self):
-        infected_indexes = self._indexes[self._is_infected]
+        """
+        Makes people infectious once they are infected long enough
+        """
+        infected_indexes = self._indices[self._is_infected]
 
         infectious = infected_indexes[
             self._infectious_start[infected_indexes] <= self._day_i - self._day_contracted[infected_indexes]
@@ -758,7 +755,7 @@ class Population:
 
         self._is_infectious[infectious] = True
 
-        infectious_indexes = self._indexes[self._is_infectious]
+        infectious_indexes = self._indices[self._is_infectious]
 
         # Put into quarantine those who have symptoms for more than a day and respect the quarantine
         in_quarantine = (self._day_i - self._day_contracted[infectious_indexes] -
@@ -780,7 +777,10 @@ class Population:
         self._is_infectious[infectious_indexes[in_quarantine]] = False
 
     def _hospitalize(self):
-        infected_indexes = self._indexes[self._is_infected]
+        """
+        Manages hospitalization, critical care and people who passed away
+        """
+        infected_indexes = self._indices[self._is_infected]
 
         hospitalization_mask = (
                                        self._health_condition[infected_indexes] <=
@@ -804,7 +804,7 @@ class Population:
         self._need_critical_care[infected_indexes[critical_care_mask]] = True
         self._need_hospitalization[infected_indexes[critical_care_mask]] = False
 
-        hospitalized_indexes = self._indexes[self._need_hospitalization]
+        hospitalized_indexes = self._indices[self._need_hospitalization]
 
         healed = self._day_i - self._day_contracted[hospitalized_indexes] + \
                  self._hospitalization_start[hospitalized_indexes] > self._hospitalization_finish[hospitalized_indexes]
@@ -818,7 +818,7 @@ class Population:
 
         self._is_immune[healed_indexes] = True
 
-        critical_care_indexes = self._indexes[self._need_critical_care]
+        critical_care_indexes = self._indices[self._need_critical_care]
 
         finished = self._day_i - self._day_contracted[critical_care_indexes] + \
                    self._critical_care_start[critical_care_indexes] > self._critical_care_finish[critical_care_indexes]
@@ -849,9 +849,9 @@ class Population:
 
     def _heal(self):
         """
-        Heals members of the population if they are infected
+        Heals members of the population if they are infected long enough
         """
-        ill_indexes = self._indexes[self._is_infected]
+        ill_indexes = self._indices[self._is_infected]
         ill_indexes = ill_indexes[self._health_condition[ill_indexes] > self._hospitalization_percentage[ill_indexes]]
 
         healed = (self._day_i - self._day_contracted[ill_indexes] - self._infectious_start[ill_indexes]) >= abs(
@@ -879,28 +879,20 @@ class Population:
         """
         Next day of the simulation
         """
-        logging.debug('_update_restrictions')
         self._update_restrictions()
 
-        logging.debug('_update_infectiousness')
         self._update_infectiousness()
 
-        logging.debug('_spread_in_cities')
         self._spread_in_cities()
 
-        logging.debug('_spread_in_households')
         self._spread_in_households()
 
-        logging.debug('_heal')
         self._heal()
 
-        logging.debug('_hospitalize')
         self._hospitalize()
 
-        logging.debug('_update_infection_probs')
         self._update_infection_probs()
 
-        logging.debug('_update_statistics')
         self._update_statistics()
 
         self._day_i += 1

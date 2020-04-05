@@ -19,8 +19,6 @@ except ImportError:
     cuda = False
     logging.warning('Failed to import cupy, using CPU')
 
-import matplotlib.pyplot as pl
-
 from tools.config import Config
 from tools.input_data import InputData
 from tools.simulation.virus import Virus
@@ -104,6 +102,3 @@ if __name__ == '__main__':
     results.to_json(results_file)
 
     logging.info(f'Simulation done in {time.time() - prior:.2e} sec')
-    #
-    # pl.hist(population.get_dead_ages())
-    # pl.show()
