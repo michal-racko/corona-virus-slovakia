@@ -8,8 +8,8 @@ population:
   mean_periodic_interactions: 0
   mean_stochastic_interactions: 15
   respect_quarantine: 0.6  # ratio of people with symptoms, who stay at home
+  quarantine_length: 14
   ratio_symptomatic: 0.6
-
 
 # === Parameters of the virus ===
 
@@ -50,12 +50,12 @@ household_distribution: data/households.json
 
 # === outputs ===
 
-result_file: results/current-restrictions.json
+result_file: results/quarantene.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/current-restrictions
+  dir: plots/quarantene
   cities:
     - Martin
     - Nitra
@@ -68,11 +68,11 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/current-restrictions/checks
+check_plots: plots/quarantene/checks
 
 geographical:
   precision: 500
   timeseries_dir:
-    plots/geographical/current-restrictions
+    plots/geographical/quarantene
 
 n_processes: 12

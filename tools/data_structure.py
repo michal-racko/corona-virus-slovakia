@@ -13,6 +13,7 @@ class TimeSeriesResult:
     def __init__(self,
                  simulation_days: list,
                  infected: list,
+                 new_cases: list,
                  susceptible: list,
                  immune: list,
                  dead: list,
@@ -27,19 +28,12 @@ class TimeSeriesResult:
 
         self.days = simulation_days
         self.infected = infected
+        self.new_cases = new_cases
         self.susceptible = susceptible
-        self.new_cases = None
         self.immune = immune
         self.dead = dead
         self.hospitalized = hospitalized
         self.critical_care = critical_care
-
-        self._prepare_new_cases()
-
-    def _prepare_new_cases(self):
-        infected = np.zeros(len(self.infected) + 1)
-
-        self.new_cases = np.diff(infected)
 
     def to_json(self, filepath: str):
         """
@@ -179,6 +173,7 @@ class GeographicalResult:
         return TimeSeriesResult(
             simulation_days=[i for i in range(len(np.array(self._data['infected']).T[city_index]))],
             infected=np.array(self._data['infected']).T[city_index],
+            new_cases=np.array(self._data['new_cases']).T[city_index],
             susceptible=np.array(self._data['susceptible']).T[city_index],
             immune=np.array(self._data['immune']).T[city_index],
             dead=np.array(self._data['dead']).T[city_index],
@@ -190,6 +185,7 @@ class GeographicalResult:
         return TimeSeriesResult(
             simulation_days=[i for i in range(len(np.array(self._data['infected']).T[0]))],
             infected=np.array(self._data['infected']).sum(axis=1),
+            new_cases=np.array(self._data['new_cases']).sum(axis=1),
             susceptible=np.array(self._data['susceptible']).sum(axis=1),
             immune=np.array(self._data['immune']).sum(axis=1),
             dead=np.array(self._data['dead']).sum(axis=1),
