@@ -1,0 +1,89 @@
+# === Simulation parameters ===
+
+min_inhabitants: 0
+simulation_days: 220
+
+# === Population ===
+
+mean_stochastic_interactions: 15
+suprespreader_ratio: 0.05
+respect_quarantine: 0
+quarantine_length: 14
+
+# === Restrictions ===
+
+#restrictions:
+#  - __type__: icu-based
+#    icu_ratio_start: 0.7
+#    icu_ratio_end: 0.5
+#    ratio: 0.4
+
+# === Medical ===
+
+n_tests_daily: 0
+n_icu_beds: 1000
+
+# === Parameters of the virus ===
+
+virus:
+  name: SARS-CoV2
+  transmission_probability: 0.0165
+  household_transmission_probability: 0.025
+  infectious_days_mean: 6.5
+  infectious_days_std: 1
+
+# === Symptoms ===
+
+ratio_symptomatic: 0.6
+
+infectious_start_mean: 5.1
+infectious_start_std: 1
+
+hospitalization_start_mean: 10
+hospitalization_start_std: 1.5
+
+hospitalization_length_mean: 8
+hospitalization_length_std: 1
+
+critical_care_start_mean: 6
+critical_care_start_std: 1.5
+
+critical_care_length_mean: 10
+critical_care_length_std: 1
+
+# === Inputs ===
+
+migration_matrix: data/sensitive/OD_final.pickle
+populations_file: data/munic_pop.xlsx
+town_locations_file: data/obce1.xlsx
+age_distribution: data/age_distribution.json
+age_symptoms: data/age_symptoms.json
+household_distribution: data/households.json
+
+# === Outputs ===
+
+result_file: results/superspreaders.json
+
+# === Plotting ===
+
+individual_cities:
+  dir: plots/superspreaders
+  cities:
+    - Martin
+    - Nitra
+    - Trenčín
+    - Trnava
+    - Banská Bystrica
+    - Žilina
+    - Poprad
+    - Prešov
+    - Bratislava-Ružinov
+    - Bratislava-Petržalka
+
+check_plots: plots/superspreaders/checks
+
+geographical:
+  precision: 500
+  timeseries_dir: plots/geographical/superspreaders
+
+n_processes: 12

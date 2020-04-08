@@ -85,3 +85,17 @@ def time_ranges(infectious, healing, hospitalization, critical_care, filepath):
 
     pl.savefig(filepath)
     pl.close()
+
+
+def interaction_multiplicities(stochastic_interactions, filepath, log_scale=False):
+    pl.hist(
+        stochastic_interactions,
+        bins=len(np.unique(stochastic_interactions)),
+        log=log_scale
+    )
+
+    pl.title('Simulated meeting patterns', fontsize=20)
+    pl.xlabel('Interaction multiplicity', fontsize=16)
+
+    pl.savefig(filepath)
+    pl.close()

@@ -1,15 +1,27 @@
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 160
-n_tests_daily: 1500
+simulation_days: 220
 
-population:
-  mean_periodic_interactions: 0
-  mean_stochastic_interactions: 15
-  respect_quarantine: 0.6  # ratio of people with symptoms, who stay at home
-  quarantine_length: 14
-  ratio_symptomatic: 0.6
+# === Population ===
+
+mean_stochastic_interactions: 15
+suprespreader_ratio: 0.05
+respect_quarantine: 0
+quarantine_length: 14
+
+# === Restrictions ===
+
+#restrictions:
+#  - __type__: icu-based
+#    icu_ratio_start: 0.7
+#    icu_ratio_end: 0.5
+#    ratio: 0.4
+
+# === Medical ===
+
+n_tests_daily: 0
+n_icu_beds: 1000
 
 # === Parameters of the virus ===
 
@@ -20,13 +32,13 @@ virus:
   infectious_days_mean: 6.5
   infectious_days_std: 1
 
-# mean time after which a person who contracted the virus
-# starts being infectious
-infectious_start_mean: 5
+# === Symptoms ===
+
+ratio_symptomatic: 0.6
+
+infectious_start_mean: 5.1
 infectious_start_std: 1
 
-# mean time after which a person who contracted the virus
-# starts needing hospitalization
 hospitalization_start_mean: 10
 hospitalization_start_std: 1.5
 
@@ -39,23 +51,23 @@ critical_care_start_std: 1.5
 critical_care_length_mean: 10
 critical_care_length_std: 1
 
-# === inputs ===
+# === Inputs ===
 
-migration_matrix: data/sensitive/OD_final.pickle
-populations_file: data/sensitive/munic_pop.xlsx
-town_locations_file: data/sensitive/obce1.xlsx
+migration_matrix: data/mock/OD_mock.pickle
+populations_file: data/munic_pop.xlsx
+town_locations_file: data/obce1.xlsx
 age_distribution: data/age_distribution.json
 age_symptoms: data/age_symptoms.json
 household_distribution: data/households.json
 
-# === outputs ===
+# === Outputs ===
 
-result_file: results/quarantene.json
+result_file: results/superspreaders.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/quarantene
+  dir: plots/superspreaders
   cities:
     - Martin
     - Nitra
@@ -68,11 +80,10 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/quarantene/checks
+check_plots: plots/superspreaders/checks
 
 geographical:
   precision: 500
-  timeseries_dir:
-    plots/geographical/quarantene
+  timeseries_dir: plots/geographical/superspreaders
 
 n_processes: 12

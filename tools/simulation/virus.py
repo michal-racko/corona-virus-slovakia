@@ -33,10 +33,9 @@ class Virus:
 
         input_data = InputData()
 
-        mean_periodic_interactions = config.get('population', 'mean_periodic_interactions')
-        mean_stochastic_interactions = config.get('population', 'mean_stochastic_interactions')
+        mean_stochastic_interactions = config.get('mean_stochastic_interactions')
 
-        mean_interactions = mean_periodic_interactions + mean_stochastic_interactions
+        mean_interactions = mean_stochastic_interactions
 
         self.R = (1 + input_data.mean_travel_ratio) * \
                  mean_interactions * self.illness_days_mean * self.transmission_probability + \

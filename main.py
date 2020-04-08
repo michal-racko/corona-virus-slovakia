@@ -74,7 +74,7 @@ if __name__ == '__main__':
     results.set_city_coords(city_longitudes, city_latitudes)
     results.set_city_sizes(city_sizes)
 
-    infected = input_data.get_infected() * 10
+    infected = input_data.get_infected()
 
     population.infect_by_cities(city_ids, infected)
 

@@ -14,7 +14,13 @@ from tools.config import Config
 from tools.general import singleton, ensure_dir
 from tools.input_data import InputData
 from tools.simulation.virus import Virus
-from tools.plotting.checks import household_age_distribution, age_distribution, time_ranges
+from tools.simulation.restrictions import Restrictions
+from tools.plotting.checks import (
+    household_age_distribution,
+    age_distribution,
+    time_ranges,
+    interaction_multiplicities
+)
 
 
 @singleton
@@ -61,12 +67,11 @@ class Population:
         self._day_contracted = cp.ones(self._size) * -1
 
         self._respects_quarantine = cp.random.random(self._size) <= self.config.get(
-            'population',
             'respect_quarantine'
         )
         self._is_in_quarantine = cp.zeros(self._size, dtype=bool)
         self._quarantine_start = cp.ones(self._size, dtype=int) * -1
-        self._quarantine_length = self.config.get('population', 'quarantine_length')
+        self._quarantine_length = self.config.get('quarantine_length')
 
         self._age = cp.zeros(self._size, dtype=int)
         self._unique_ages = None
@@ -76,12 +81,10 @@ class Population:
         self._health_condition = cp.random.random(self._size)
 
         # === Meeting patterns:
-        self._mean_stochastic_interactions = self.config.get('population', 'mean_stochastic_interactions')
+        self.mean_stochastic_interactions = None
+        self.stochastic_interactions = None
 
-        self._stochastic_interactions = cp.random.poisson(
-            self._mean_stochastic_interactions,
-            self._size
-        )
+        self._init_meeting_patterns()
 
         # === Symptoms:
         sympt_dice = cp.random.random(self._size)
@@ -167,11 +170,16 @@ class Population:
             )
         )
 
-        self._day_i = 0
+        self.day_i = 0
 
         self._update_infection_probs()
 
         self._plot_time_ranges()
+
+        # === Medical:
+
+        self.n_icu_beds = self.config.get('n_icu_beds')
+        self.occupied_icu_beds = 0
 
         # === Result placeholders:
 
@@ -186,6 +194,56 @@ class Population:
             'hospitalized': cp.zeros((simulation_days, len(self._city_populations))),
             'critical_care': cp.zeros((simulation_days, len(self._city_populations)))
         }
+
+        try:
+            self._restrictions = [
+                Restrictions.from_string(
+                    restriction['__type__'],
+                    **{k: v for k, v in restriction.items() if k != '__type__'}
+                ) for restriction in self.config.get('restrictions')
+            ]
+
+        except KeyError:
+            self._restrictions = []
+
+    def _init_meeting_patterns(self):
+        self.mean_stochastic_interactions = self.config.get('mean_stochastic_interactions')
+
+        superspreader_mask = cp.random.random(self._size) < self.config.get('suprespreader_ratio')
+
+        self.stochastic_interactions = cp.random.poisson(
+            self.mean_stochastic_interactions,
+            self._size
+        )
+
+        self.stochastic_interactions[superspreader_mask] = cp.random.negative_binomial(
+            15,
+            0.1,
+            int(superspreader_mask.astype(int).sum())
+        )
+
+        check_plot_dir = self.config.get(
+            'check_plots'
+        )
+
+        ensure_dir(check_plot_dir)
+
+        if cuda:
+            interactions = cp.asnumpy(self.stochastic_interactions)
+
+        else:
+            interactions = self.stochastic_interactions
+
+        interaction_multiplicities(
+            interactions,
+            filepath=f'{check_plot_dir}/interaction-multiplicities.png'
+        )
+
+        interaction_multiplicities(
+            interactions,
+            filepath=f'{check_plot_dir}/interaction-multiplicities-log.png',
+            log_scale=True
+        )
 
     def _plot_time_ranges(self):
         """
@@ -387,28 +445,30 @@ class Population:
         """
         Writes current results to self._statistics
         """
-        self._is_new_case = self._day_contracted == self._day_i
+        self._is_new_case = self._day_contracted == self.day_i
 
         _, susceptible = self.get_susceptible_by_city()
-        self._statistics['susceptible'][self._day_i][:] = susceptible
+        self._statistics['susceptible'][self.day_i][:] = susceptible
 
         _, infected = self.get_infected_by_city()
-        self._statistics['infected'][self._day_i][:] = infected
+        self._statistics['infected'][self.day_i][:] = infected
 
         _, new_cases = self.get_new_cases_by_city()
-        self._statistics['new_cases'][self._day_i][:] = new_cases
+        self._statistics['new_cases'][self.day_i][:] = new_cases
 
         _, immune = self.get_immune_by_city()
-        self._statistics['immune'][self._day_i][:] = immune
+        self._statistics['immune'][self.day_i][:] = immune
 
         _, dead = self.get_dead_by_city()
-        self._statistics['dead'][self._day_i][:] = dead
+        self._statistics['dead'][self.day_i][:] = dead
 
         _, hospitalized = self.get_hospitalized_by_city()
-        self._statistics['hospitalized'][self._day_i][:] = hospitalized
+        self._statistics['hospitalized'][self.day_i][:] = hospitalized
 
         _, critical_care = self.get_critical_care_by_city()
-        self._statistics['critical_care'][self._day_i][:] = critical_care
+        self._statistics['critical_care'][self.day_i][:] = critical_care
+
+        self.occupied_icu_beds = int(critical_care.sum())
 
     def get_results(self) -> dict:
         """
@@ -692,7 +752,7 @@ class Population:
 
         susceptible_indexes = self._indices[self.get_susceptible()]
 
-        poisson_mean = self._stochastic_interactions[susceptible_indexes]
+        poisson_mean = self.stochastic_interactions[susceptible_indexes]
 
         susceptible_probabilities = probabilities[self._is_susceptible]
 
@@ -712,7 +772,7 @@ class Population:
             infected = susceptible[cp.random.random(len(susceptible)) <= current_probs]
 
             self._is_infected[infected] = True
-            self._day_contracted[infected] = self._day_i
+            self._day_contracted[infected] = self.day_i
 
     def _spread_in_households(self):
         """
@@ -765,7 +825,7 @@ class Population:
         )
 
         self._is_infected[newly_infected] = True
-        self._day_contracted[newly_infected] = self._day_i
+        self._day_contracted[newly_infected] = self.day_i
 
     def infect_by_cities(self, city_ids, infection_counts, random_seed=None):
         """
@@ -789,7 +849,7 @@ class Population:
                 newly_infected = susceptible
 
             self._is_infected[newly_infected] = True
-            self._day_contracted[newly_infected] = self._day_i
+            self._day_contracted[newly_infected] = self.day_i
 
     def _update_infectiousness(self):
         """
@@ -798,7 +858,7 @@ class Population:
         infected_indexes = self._indices[self._is_infected]
 
         infectious = infected_indexes[
-            self._infectious_start[infected_indexes] <= self._day_i - self._day_contracted[infected_indexes]
+            self._infectious_start[infected_indexes] <= self.day_i - self._day_contracted[infected_indexes]
             ]
 
         self._is_infectious[infectious] = True
@@ -806,16 +866,16 @@ class Population:
         infectious_indexes = self._indices[self._is_infectious]
 
         # Put into quarantine those who have symptoms for more than a day and respect the quarantine
-        in_quarantine = (self._day_i - self._day_contracted[infectious_indexes] -
+        in_quarantine = (self.day_i - self._day_contracted[infectious_indexes] -
                          self._infectious_start[infectious_indexes] >= 1) * \
                         self._is_symptomatic[infectious_indexes] * self._respects_quarantine[infectious_indexes]
 
         self._is_in_quarantine[infectious_indexes[in_quarantine]] = True
-        self._quarantine_start[infectious_indexes[in_quarantine]] = self._day_i
+        self._quarantine_start[infectious_indexes[in_quarantine]] = self.day_i
 
         try:
             prob_tested = self.config.get('n_tests_daily') / (
-                    int(self._is_infectious.astype(int).sum()) * self._mean_stochastic_interactions
+                    int(self._is_infectious.astype(int).sum()) * self.mean_stochastic_interactions
             )
 
         except ZeroDivisionError:
@@ -824,10 +884,10 @@ class Population:
         in_quarantine = cp.random.random(len(infectious_indexes)) <= prob_tested
 
         self._is_in_quarantine[infectious_indexes[in_quarantine]] = True
-        self._quarantine_start[infectious_indexes[in_quarantine]] = self._day_i
+        self._quarantine_start[infectious_indexes[in_quarantine]] = self.day_i
 
         quarantine_indices = self._indices[self._is_in_quarantine]
-        quarantine_passed = self._day_i - \
+        quarantine_passed = self.day_i - \
                             self._quarantine_start[quarantine_indices] > self._quarantine_length
 
         quarantine_passed_indices = quarantine_indices[quarantine_passed]
@@ -845,7 +905,7 @@ class Population:
                                        self._hospitalization_percentage[infected_indexes]
                                ) * (
                                        self._hospitalization_start[infected_indexes] >=
-                                       (self._day_i - self._day_contracted[infected_indexes])
+                                       (self.day_i - self._day_contracted[infected_indexes])
                                )
 
         self._need_hospitalization[infected_indexes[hospitalization_mask]] = True
@@ -856,7 +916,7 @@ class Population:
                                      self._critical_care_percentage[infected_indexes]
                              ) * (
                                      self._critical_care_start[infected_indexes] >=
-                                     (self._day_i - self._day_contracted[infected_indexes])
+                                     (self.day_i - self._day_contracted[infected_indexes])
                              )
 
         self._need_critical_care[infected_indexes[critical_care_mask]] = True
@@ -864,7 +924,7 @@ class Population:
 
         hospitalized_indexes = self._indices[self._need_hospitalization]
 
-        healed = self._day_i - self._day_contracted[hospitalized_indexes] + \
+        healed = self.day_i - self._day_contracted[hospitalized_indexes] + \
                  self._hospitalization_start[hospitalized_indexes] > self._hospitalization_finish[hospitalized_indexes]
 
         healed_indexes = hospitalized_indexes[healed]
@@ -878,7 +938,7 @@ class Population:
 
         critical_care_indexes = self._indices[self._need_critical_care]
 
-        finished = self._day_i - self._day_contracted[critical_care_indexes] + \
+        finished = self.day_i - self._day_contracted[critical_care_indexes] + \
                    self._critical_care_start[critical_care_indexes] > self._critical_care_finish[critical_care_indexes]
 
         finished_indexes = critical_care_indexes[finished]
@@ -890,7 +950,7 @@ class Population:
         self._is_infected[healed] = False
         self._is_infectious[healed] = False
 
-        self._illness_days_total[healed] = self._day_i - self._day_contracted[healed]
+        self._illness_days_total[healed] = self.day_i - self._day_contracted[healed]
 
         self._is_immune[healed] = True
 
@@ -912,7 +972,7 @@ class Population:
         ill_indexes = self._indices[self._is_infected]
         ill_indexes = ill_indexes[self._health_condition[ill_indexes] > self._hospitalization_percentage[ill_indexes]]
 
-        healed = (self._day_i - self._day_contracted[ill_indexes] - self._infectious_start[ill_indexes]) >= abs(
+        healed = (self.day_i - self._day_contracted[ill_indexes] - self._infectious_start[ill_indexes]) >= abs(
             self._healing_days[ill_indexes]
         )
 
@@ -921,24 +981,13 @@ class Population:
         self._is_infected[healed_indexes] = False
         self._is_infectious[healed_indexes] = False
 
-        self._illness_days_total[healed_indexes] = self._day_i - self._day_contracted[healed_indexes]
+        self._illness_days_total[healed_indexes] = self.day_i - self._day_contracted[healed_indexes]
 
         self._is_immune[healed_indexes] = True
 
     def _update_restrictions(self):
-        if self._day_i == 10:
-            self._stochastic_interactions = self._stochastic_interactions * 0.52
-            self._mean_stochastic_interactions *= 0.52
-
-            self._virus.household_transmission_probability *= 1.1
-
-        if self._day_i == 50:
-            self._stochastic_interactions = self._stochastic_interactions / 0.52
-            self._mean_stochastic_interactions /= 0.52
-
-            self._virus.household_transmission_probability /= 1.1
-
-            self._stochastic_interactions[self._age >= 60] = self._stochastic_interactions[self._age >= 60] * 0.2
+        for restriction in self._restrictions:
+            restriction.impose(self)
 
     def next_day(self):
         """
@@ -960,7 +1009,7 @@ class Population:
 
         self._update_statistics()
 
-        self._day_i += 1
+        self.day_i += 1
 
     @staticmethod
     def _reset_random_seed():
