@@ -24,3 +24,15 @@ was generated.
 To run the simulation with the mock data:
 
 `python main.py -c config/mock_data.yml`
+
+#### Computational resources
+
+Estimates based on 160 simulated days for the entire country
+
+With CUDA:
+- GPU memory: ~1.5 GB
+- run time:   ~1 min
+
+CPU only:
+- RAM: ~ 1.5 GB
+- run time:   ~10 min
