@@ -73,7 +73,7 @@ class Population:
 
         self._init_ages(input_data.age_distribution)
 
-        self._health_condition = cp.random.random(self._size, dtype=float)
+        self._health_condition = cp.random.random(self._size)
 
         # === Meeting patterns:
         self._mean_stochastic_interactions = self.config.get('population', 'mean_stochastic_interactions')
@@ -926,12 +926,19 @@ class Population:
         self._is_immune[healed_indexes] = True
 
     def _update_restrictions(self):
-        # if self._day_i == 10:
-        #     self._stochastic_interactions = self._stochastic_interactions * 0.52
-        #     self._mean_stochastic_interactions *= 0.52
-        #
-        #     self._virus.household_transmission_probability *= 1.1
-        pass
+        if self._day_i == 10:
+            self._stochastic_interactions = self._stochastic_interactions * 0.52
+            self._mean_stochastic_interactions *= 0.52
+
+            self._virus.household_transmission_probability *= 1.1
+
+        if self._day_i == 50:
+            self._stochastic_interactions = self._stochastic_interactions / 0.52
+            self._mean_stochastic_interactions /= 0.52
+
+            self._virus.household_transmission_probability /= 1.1
+
+            self._stochastic_interactions[self._age >= 60] = self._stochastic_interactions[self._age >= 60] * 0.2
 
     def next_day(self):
         """
