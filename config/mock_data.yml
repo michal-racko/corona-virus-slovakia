@@ -7,20 +7,20 @@ simulation_days: 220
 
 mean_stochastic_interactions: 15
 suprespreader_ratio: 0.05
-respect_quarantine: 0
+respect_quarantine: 0.5
 quarantine_length: 14
 
 # === Restrictions ===
 
-#restrictions:
-#  - __type__: icu-based
-#    icu_ratio_start: 0.7
-#    icu_ratio_end: 0.5
-#    ratio: 0.4
+restrictions:
+  - __type__: icu-based
+    icu_ratio_start: 0.7
+    icu_ratio_end: 0.5
+    ratio: 0.4
 
 # === Medical ===
 
-n_tests_daily: 0
+n_tests_daily: 1000
 n_icu_beds: 1000
 
 # === Parameters of the virus ===
@@ -62,12 +62,12 @@ household_distribution: data/households.json
 
 # === Outputs ===
 
-result_file: results/superspreaders.json
+result_file: results/tests.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/superspreaders
+  dir: plots/tests
   cities:
     - Martin
     - Nitra
@@ -80,10 +80,10 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/superspreaders/checks
+check_plots: plots/tests/checks
 
 geographical:
   precision: 500
-  timeseries_dir: plots/geographical/superspreaders
+  timeseries_dir: plots/geographical/tests
 
 n_processes: 12

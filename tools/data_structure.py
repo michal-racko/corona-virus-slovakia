@@ -75,6 +75,11 @@ class GeographicalResult:
             'critical_care': []
         }
 
+        self._parameters = {}
+
+    def add_parameters(self, params: dict):
+        self._parameters.update(params)
+
     def to_json(self, filepath: str):
         """
         Saves results as a .json file to the given path
@@ -88,7 +93,8 @@ class GeographicalResult:
                 'city_names': self._city_names,
                 'city_sizes': self._city_sizes,
                 'longitudes': self._longitudes,
-                'latitudes': self._latitudes
+                'latitudes': self._latitudes,
+                'parameters': self._parameters
             }, f)
 
     @classmethod
@@ -113,6 +119,14 @@ class GeographicalResult:
         instance.set_city_sizes(
             _data['city_sizes']
         )
+
+        try:
+            instance.add_parameters(
+                _data['parameters']
+            )
+
+        except KeyError:
+            pass
 
         return instance
 

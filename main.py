@@ -95,6 +95,11 @@ if __name__ == '__main__':
         population.travel(_mig_matrix)
         population.next_day()
 
+    results.add_parameters({
+        'restrictions_start': population.restrictions_start,
+        'restrictions_end': population.restrictions_end
+    })
+
     results.set_data(
         population.get_results()
     )

@@ -206,6 +206,9 @@ class Population:
         except KeyError:
             self._restrictions = []
 
+        self.restrictions_start = []
+        self.restrictions_end = []
+
     def _init_meeting_patterns(self):
         self.mean_stochastic_interactions = self.config.get('mean_stochastic_interactions')
 
@@ -720,8 +723,26 @@ class Population:
         incoming_infected = cp.matmul(migration_matrix, self._city_infected_counts / self._city_population_sizes)
         incoming_total = migration_matrix.sum(axis=0)
 
-        self._city_infection_probs += incoming_infected / (incoming_total + self._city_population_sizes) * \
-                                      self._virus.transmission_probability
+        infected_indices = self._indices[self._is_infectious]
+        quarantine = self._is_in_quarantine[infected_indices]
+
+        quarantine = quarantine * (cp.random.random(len(infected_indices)) <= 0.8)  # TODO: put into config
+
+        infected_indices = infected_indices[~quarantine]
+
+        infecious_city_ids = self._city_id[infected_indices]
+
+        if len(infecious_city_ids) == 0:
+            self._city_infected_counts = cp.zeros(len(self._city_ids))
+
+        else:
+            city_ids, infected_counts = cp.unique(infecious_city_ids, return_counts=True)
+
+            _, self._city_infected_counts = self._sort_by_city_ids(city_ids, infected_counts, as_json=False)
+
+        self._city_infection_probs = (self._city_infected_counts + incoming_infected) / \
+                                     (incoming_total + self._city_population_sizes) * \
+                                     self._virus.transmission_probability
 
     def _spread_in_cities(self, random_seed=None):
         """
@@ -873,6 +894,9 @@ class Population:
         self._is_in_quarantine[infectious_indexes[in_quarantine]] = True
         self._quarantine_start[infectious_indexes[in_quarantine]] = self.day_i
 
+        if self.day_i < 14:
+            return
+
         try:
             prob_tested = self.config.get('n_tests_daily') / (
                     int(self._is_infectious.astype(int).sum()) * self.mean_stochastic_interactions
@@ -1004,8 +1028,6 @@ class Population:
         self._heal()
 
         self._hospitalize()
-
-        self._update_infection_probs()
 
         self._update_statistics()
 

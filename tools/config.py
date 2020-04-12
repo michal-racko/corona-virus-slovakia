@@ -17,7 +17,7 @@ class Config:
         :param file_path: path to the config file
         """
         try:
-            with open(file_path) as config_file:
+            with open(file_path, encoding='utf-8') as config_file:
                 self._config = yaml.load(config_file, Loader=yaml.FullLoader)
 
         except FileNotFoundError:

@@ -1,22 +1,22 @@
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 220
+simulation_days: 160
 
 # === Population ===
 
 mean_stochastic_interactions: 15
 suprespreader_ratio: 0.05
-respect_quarantine: 0
+respect_quarantine: 0.5
 quarantine_length: 14
 
 # === Restrictions ===
 
 #restrictions:
-#  - __type__: icu-based
-#    icu_ratio_start: 0.7
-#    icu_ratio_end: 0.5
-#    ratio: 0.4
+#  - __type__: Interactions
+#    day_start: 28
+#    day_end: 500
+#    ratio: 0.52
 
 # === Medical ===
 
@@ -53,7 +53,7 @@ critical_care_length_std: 1
 
 # === Inputs ===
 
-migration_matrix: data/mock/OD_mock.pickle
+migration_matrix: data/sensitive/OD_final.pickle
 populations_file: data/munic_pop.xlsx
 town_locations_file: data/obce1.xlsx
 age_distribution: data/age_distribution.json
@@ -62,12 +62,12 @@ household_distribution: data/households.json
 
 # === Outputs ===
 
-result_file: results/superspreaders.json
+result_file: results/business-as-usual.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/superspreaders
+  dir: plots/business-as-usual
   cities:
     - Martin
     - Nitra
@@ -80,10 +80,10 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/superspreaders/checks
+check_plots: plots/business-as-usual/checks
 
 geographical:
   precision: 500
-  timeseries_dir: plots/geographical/superspreaders
+  timeseries_dir: plots/geographical/business-as-usual
 
 n_processes: 12
