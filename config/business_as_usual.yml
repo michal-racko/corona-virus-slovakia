@@ -1,12 +1,12 @@
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 420
+simulation_days: 200
 
 # === Population ===
 
-mean_stochastic_interactions: 15
-social_network_daily_ratio: 0
+mean_stochastic_interactions: 4.3
+social_network_daily_ratio: 0.5
 suprespreader_ratio: 0.05
 respect_quarantine: 0
 quarantine_length: 14
@@ -17,7 +17,7 @@ restrictions:
   - __type__: Interactions
     day_start: 10
     day_end: 500
-    ratio: 0.1
+    ratio: 0.6
 
 # === Medical ===
 
@@ -60,16 +60,16 @@ town_locations_file: data/obce1.xlsx
 age_distribution: data/age_distribution.json
 age_symptoms: data/age_symptoms.json
 household_distribution: data/households.json
-#social_network: data/social/generated/watts_strogatz.json
+social_network: data/social/generated/watts_strogatz_triple_big.json
 
 # === Outputs ===
 
-result_file: results/restrictions-0.1.json
+result_file: results/watts_strogatz_triple.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/restrictions-0.1
+  dir: plots/watts_strogatz_triple
   cities:
     - Martin
     - Nitra
@@ -82,10 +82,10 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/restrictions-0.1/checks
+check_plots: plots/watts_strogatz_triple/checks
 
 geographical:
   precision: 500
-  timeseries_dir: plots/geographical/restrictions-0.1
+  timeseries_dir: plots/geographical/watts_strogatz_triple
 
 n_processes: 12

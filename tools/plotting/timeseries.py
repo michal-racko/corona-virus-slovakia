@@ -9,7 +9,7 @@ from tools.simulation.virus import Virus
 from tools.data_structure import TimeSeriesResult
 
 
-def plot_pandemic(data: TimeSeriesResult, filepath=None):
+def plot_pandemic(data: TimeSeriesResult, filepath=None, logscale=False):
     config = Config()
 
     virus = Virus.from_string(
@@ -50,6 +50,9 @@ def plot_pandemic(data: TimeSeriesResult, filepath=None):
         ('Susceptible', 'Infected', 'Immune')
     )
 
+    if logscale:
+        ax1.set_yscale('log')
+
     ax1.grid(True)
 
     p4 = ax2.plot(
@@ -67,6 +70,9 @@ def plot_pandemic(data: TimeSeriesResult, filepath=None):
     )
 
     ax2.legend((p4[0], p5[0]), ('Hospitalized', 'Critical Care'))
+
+    if logscale:
+        ax2.set_yscale('log')
 
     ax2.grid(True)
 
@@ -105,6 +111,9 @@ def plot_pandemic(data: TimeSeriesResult, filepath=None):
         ('Asymptomatic', 'Mild symptoms', 'New cases', 'Dead cumulative')
     )
     ax3.set_xlabel('Days', fontsize=16)
+
+    if logscale:
+        ax3.set_yscale('log')
 
     ax3.grid(True)
 

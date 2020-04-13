@@ -88,13 +88,13 @@ class Population:
         self._init_meeting_patterns()
 
         try:
-            self._social_network = SocialNetwork.read_json(
+            self.social_network = SocialNetwork.read_json(
                 self.config.get('social_network'),
                 daily_fraction=self.config.get('social_network_daily_ratio')
             )
 
         except KeyError:
-            self._social_network = None
+            self.social_network = None
 
         # === Symptoms:
         sympt_dice = cp.random.random(self._size)
@@ -788,10 +788,10 @@ class Population:
             self._day_contracted[infected] = self.day_i
 
     def _spread_in_social_networks(self):
-        if self._social_network is None:
+        if self.social_network is None:
             return
 
-        for start_vertices, end_vertices in self._social_network:
+        for start_vertices, end_vertices in self.social_network:
             start_susceptible = self._is_susceptible[start_vertices]
             end_susceptible = self._is_susceptible[end_vertices]
 
@@ -801,13 +801,13 @@ class Population:
             forward_transmissions = start_infectious * end_susceptible * (
                     cp.random.random(
                         len(start_infectious)
-                    ) <= self._virus.household_transmission_probability
+                    ) <= self._virus.household_transmission_probability / 2
             )
 
             backward_transmissions = end_infectious * start_susceptible * (
                     cp.random.random(
                         len(start_infectious)
-                    ) <= self._virus.household_transmission_probability
+                    ) <= self._virus.household_transmission_probability / 2
             )
 
             infected = cp.hstack([

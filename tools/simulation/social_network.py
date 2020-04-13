@@ -45,6 +45,12 @@ class SocialNetwork:
 
         return res
 
+    def multiply_daily_fraction(self, by: float):
+        """
+        Multiplies the daily fraction by the given number
+        """
+        self._daily_fraction *= by
+
     def get_vertices(self, interaction_i: int) -> tuple:
         """
         :param interaction_i:       Desired interaction i

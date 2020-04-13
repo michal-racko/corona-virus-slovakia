@@ -67,6 +67,9 @@ class Interactions(Restrictions):
             population.stochastic_interactions = population.stochastic_interactions * self._ratio
             population.mean_stochastic_interactions = population.mean_stochastic_interactions * self._ratio
 
+            if population.social_network is not None:
+                population.social_network.multiply_daily_fraction(self._ratio)
+
             population.restrictions_start.append(
                 population.day_i
             )
@@ -74,6 +77,9 @@ class Interactions(Restrictions):
         elif population.day_i == self._day_end:
             population.stochastic_interactions = population.stochastic_interactions / self._ratio
             population.mean_stochastic_interactions = population.mean_stochastic_interactions / self._ratio
+
+            if population.social_network is not None:
+                population.social_network.multiply_daily_fraction(1 / self._ratio)
 
             population.restrictions_end.append(
                 population.day_i
@@ -103,6 +109,9 @@ class ICUBased(Restrictions):
             population.stochastic_interactions = population.stochastic_interactions * self._ratio
             population.mean_stochastic_interactions = population.mean_stochastic_interactions * self._ratio
 
+            if population.social_network is not None:
+                population.social_network.multiply_daily_fraction(self._ratio)
+
             population.restrictions_start.append(
                 population.day_i
             )
@@ -112,6 +121,9 @@ class ICUBased(Restrictions):
         if self._imposed and occupied_icu_ratio < self._icu_ratio_end:
             population.stochastic_interactions = population.stochastic_interactions / self._ratio
             population.mean_stochastic_interactions = population.mean_stochastic_interactions / self._ratio
+
+            if population.social_network is not None:
+                population.social_network.multiply_daily_fraction(1 / self._ratio)
 
             population.restrictions_end.append(
                 population.day_i
