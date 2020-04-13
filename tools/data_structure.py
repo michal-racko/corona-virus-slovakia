@@ -66,6 +66,8 @@ class GeographicalResult:
         self._longitudes = None
         self._latitudes = None
 
+        self._config = None
+
         self._data = {
             'susceptible': [],
             'infected': [],
@@ -94,7 +96,8 @@ class GeographicalResult:
                 'city_sizes': self._city_sizes,
                 'longitudes': self._longitudes,
                 'latitudes': self._latitudes,
-                'parameters': self._parameters
+                'parameters': self._parameters,
+                'config': self._config
             }, f)
 
     @classmethod
@@ -119,6 +122,9 @@ class GeographicalResult:
         instance.set_city_sizes(
             _data['city_sizes']
         )
+        instance.set_config(
+            _data['config']
+        )
 
         try:
             instance.add_parameters(
@@ -129,6 +135,9 @@ class GeographicalResult:
             pass
 
         return instance
+
+    def set_config(self, config: dict):
+        self._config = config
 
     def set_data(self, data: dict):
         self._data = data

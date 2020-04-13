@@ -61,6 +61,9 @@ class Config:
 
         return conf
 
+    def to_dict(self) -> dict:
+        return self._config
+
     def to_yaml(self) -> str:
         """
         Dumps current configurations into a yaml-serialized string.

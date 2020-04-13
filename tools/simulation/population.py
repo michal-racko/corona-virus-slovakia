@@ -15,6 +15,7 @@ from tools.general import singleton, ensure_dir
 from tools.input_data import InputData
 from tools.simulation.virus import Virus
 from tools.simulation.restrictions import Restrictions
+from tools.simulation.social_network import SocialNetwork
 from tools.plotting.checks import (
     household_age_distribution,
     age_distribution,
@@ -85,6 +86,15 @@ class Population:
         self.stochastic_interactions = None
 
         self._init_meeting_patterns()
+
+        try:
+            self._social_network = SocialNetwork.read_json(
+                self.config.get('social_network'),
+                daily_fraction=self.config.get('social_network_daily_ratio')
+            )
+
+        except KeyError:
+            self._social_network = None
 
         # === Symptoms:
         sympt_dice = cp.random.random(self._size)
@@ -723,26 +733,8 @@ class Population:
         incoming_infected = cp.matmul(migration_matrix, self._city_infected_counts / self._city_population_sizes)
         incoming_total = migration_matrix.sum(axis=0)
 
-        infected_indices = self._indices[self._is_infectious]
-        quarantine = self._is_in_quarantine[infected_indices]
-
-        quarantine = quarantine * (cp.random.random(len(infected_indices)) <= 0.8)  # TODO: put into config
-
-        infected_indices = infected_indices[~quarantine]
-
-        infecious_city_ids = self._city_id[infected_indices]
-
-        if len(infecious_city_ids) == 0:
-            self._city_infected_counts = cp.zeros(len(self._city_ids))
-
-        else:
-            city_ids, infected_counts = cp.unique(infecious_city_ids, return_counts=True)
-
-            _, self._city_infected_counts = self._sort_by_city_ids(city_ids, infected_counts, as_json=False)
-
-        self._city_infection_probs = (self._city_infected_counts + incoming_infected) / \
-                                     (incoming_total + self._city_population_sizes) * \
-                                     self._virus.transmission_probability
+        self._city_infection_probs += incoming_infected / (incoming_total + self._city_population_sizes) * \
+                                      self._virus.transmission_probability
 
     def _spread_in_cities(self, random_seed=None):
         """
@@ -791,6 +783,37 @@ class Population:
             current_probs = susceptible_probabilities[current_indexes]
 
             infected = susceptible[cp.random.random(len(susceptible)) <= current_probs]
+
+            self._is_infected[infected] = True
+            self._day_contracted[infected] = self.day_i
+
+    def _spread_in_social_networks(self):
+        if self._social_network is None:
+            return
+
+        for start_vertices, end_vertices in self._social_network:
+            start_susceptible = self._is_susceptible[start_vertices]
+            end_susceptible = self._is_susceptible[end_vertices]
+
+            start_infectious = self._is_infectious[start_vertices]
+            end_infectious = self._is_infectious[end_vertices]
+
+            forward_transmissions = start_infectious * end_susceptible * (
+                    cp.random.random(
+                        len(start_infectious)
+                    ) <= self._virus.household_transmission_probability
+            )
+
+            backward_transmissions = end_infectious * start_susceptible * (
+                    cp.random.random(
+                        len(start_infectious)
+                    ) <= self._virus.household_transmission_probability
+            )
+
+            infected = cp.hstack([
+                end_vertices[forward_transmissions],
+                start_vertices[backward_transmissions]
+            ])
 
             self._is_infected[infected] = True
             self._day_contracted[infected] = self.day_i
@@ -1023,11 +1046,15 @@ class Population:
 
         self._spread_in_cities()
 
+        self._spread_in_social_networks()
+
         self._spread_in_households()
 
         self._heal()
 
         self._hospitalize()
+
+        self._update_infection_probs()
 
         self._update_statistics()
 

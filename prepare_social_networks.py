@@ -4,12 +4,12 @@ import pandas as pd
 import networkx as nx
 
 OUTPUT_DIR = 'data/social/generated'
-OUTPUT_FILE = 'social-net-0.4.json'
+OUTPUT_FILE = 'watts_strogatz.json'
 POPULATIONS_FILE = 'data/munic_pop.xlsx'
 TOWN_LOCATIONS_FILE = 'data/obce1.xlsx'
 
-MEAN_CONTACTS = 10
-REWIRING = 0.4
+MEAN_CONTACTS = 30
+REWIRING = 0.7
 
 if __name__ == '__main__':
     population_df = pd.read_excel(POPULATIONS_FILE)
@@ -32,7 +32,14 @@ if __name__ == '__main__':
 
         n_groups = int(city_population / MEAN_CONTACTS)
 
-        city_graph = nx.relaxed_caveman_graph(n_groups, MEAN_CONTACTS, REWIRING)
+        try:
+            H = nx.connected_watts_strogatz_graph(int(0.9 * city_population), 15, 0.1)
+            F = nx.powerlaw_cluster_graph(int(0.1 * city_population), 10, 0.3)
+
+            city_graph = nx.compose(H, F)
+
+        except nx.exception.NetworkXError:
+            city_graph = nx.relaxed_caveman_graph(n_groups, MEAN_CONTACTS, REWIRING)
 
         edges = city_graph.edges()
 
