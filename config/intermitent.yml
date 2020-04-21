@@ -1,35 +1,41 @@
+# No restrictions, no quarantine
+
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 220
+simulation_days: 360
 
 # === Population ===
 
 mean_stochastic_interactions: 15
-suprespreader_ratio: 0.05
-respect_quarantine: 0.5
+#social_network_daily_ratio: 0.5
+suprespreader_ratio: 0
+respect_quarantine: 0.8
 quarantine_effifiency: 0.8
 quarantine_length: 14
+
+lockdown_ratio: 0.05
+trace_contacts: false
 
 # === Restrictions ===
 
 restrictions:
-  - __type__: icu-based
+  - __type__: ICUBased
     icu_ratio_start: 0.7
     icu_ratio_end: 0.5
     ratio: 0.4
 
 # === Medical ===
 
-n_tests_daily: 1000
+n_tests_daily: 0
 n_icu_beds: 1000
 
 # === Parameters of the virus ===
 
 virus:
   name: SARS-CoV2
-  transmission_probability: 0.0165
-  household_transmission_probability: 0.025
+  transmission_probability: 0.0115
+  household_transmission_probability: 0.032
   infectious_days_mean: 6.5
   infectious_days_std: 1
 
@@ -60,15 +66,16 @@ town_locations_file: data/obce1.xlsx
 age_distribution: data/age_distribution.json
 age_symptoms: data/age_symptoms.json
 household_distribution: data/households.json
+social_network: data/social/generated/watts_strogatz_triple_big.json
 
 # === Outputs ===
 
-result_file: results/tests.json
+result_file: results/intermitent.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/tests
+  dir: plots/intermitent
   cities:
     - Martin
     - Nitra
@@ -81,10 +88,10 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/tests/checks
+check_plots: plots/intermitent/checks
 
 geographical:
   precision: 500
-  timeseries_dir: plots/geographical/tests
+  timeseries_dir: plots/geographical/intermitent
 
 n_processes: 12

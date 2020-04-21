@@ -1,34 +1,56 @@
+# No restrictions, no quarantine
+
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 220
+simulation_days: 460
 
 # === Population ===
 
-mean_stochastic_interactions: 15
+mean_stochastic_interactions: 3.2
+social_network_daily_ratio: 0.8
 suprespreader_ratio: 0.05
-respect_quarantine: 0.5
-quarantine_effifiency: 0.8
+respect_quarantine: 0.9
+quarantine_effifiency: 0.9
 quarantine_length: 14
+
+lockdown_ratio: 0.05
+trace_contacts: true
 
 # === Restrictions ===
 
 restrictions:
-  - __type__: icu-based
-    icu_ratio_start: 0.7
-    icu_ratio_end: 0.5
+  - __type__: Interactions
+    day_start: 0
+    day_end: 20
     ratio: 0.4
+  - __type__: Interactions
+    day_start: 20
+    day_end: 460
+    ratio: 0.75
+  - __type__: Travel
+    day_start: 0
+    day_end: 460
+    ratio: 0.4
+  - __type__: AdaptiveTravel
+    threshold: 0.001
+    duration: 60
+    ratio: 0.05
+  - __type__: AdaptiveInteractions
+    threshold: 0.001
+    duration: 60
+    ratio: 0.05
 
 # === Medical ===
 
-n_tests_daily: 1000
+n_tests_daily: 0
 n_icu_beds: 1000
 
 # === Parameters of the virus ===
 
 virus:
   name: SARS-CoV2
-  transmission_probability: 0.0165
+  transmission_probability: 0.0132
   household_transmission_probability: 0.025
   infectious_days_mean: 6.5
   infectious_days_std: 1
@@ -60,15 +82,16 @@ town_locations_file: data/obce1.xlsx
 age_distribution: data/age_distribution.json
 age_symptoms: data/age_symptoms.json
 household_distribution: data/households.json
+social_network: data/social/generated/watts_strogatz_triple.json
 
 # === Outputs ===
 
-result_file: results/tests.json
+result_file: results/current_restrictions.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/tests
+  dir: plots/current_restrictions
   cities:
     - Martin
     - Nitra
@@ -81,10 +104,10 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/tests/checks
+check_plots: plots/current_restrictions/checks
 
 geographical:
   precision: 500
-  timeseries_dir: plots/geographical/tests
+  timeseries_dir: plots/geographical/current_restrictions
 
 n_processes: 12

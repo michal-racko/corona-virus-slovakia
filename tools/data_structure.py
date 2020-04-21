@@ -66,6 +66,8 @@ class GeographicalResult:
         self._longitudes = None
         self._latitudes = None
 
+        self._r_eff = None
+
         self._config = None
 
         self._data = {
@@ -97,7 +99,8 @@ class GeographicalResult:
                 'longitudes': self._longitudes,
                 'latitudes': self._latitudes,
                 'parameters': self._parameters,
-                'config': self._config
+                'config': self._config,
+                'R_eff': self._r_eff
             }, f)
 
     @classmethod
@@ -127,6 +130,14 @@ class GeographicalResult:
         )
 
         try:
+            instance.set_r_eff(
+                _data['R_eff']
+            )
+
+        except KeyError:
+            pass
+
+        try:
             instance.add_parameters(
                 _data['parameters']
             )
@@ -141,6 +152,9 @@ class GeographicalResult:
 
     def set_data(self, data: dict):
         self._data = data
+
+    def set_r_eff(self, r_eff):
+        self._r_eff = r_eff
 
     def set_city_ids(self, city_ids, city_names):
         self._city_ids = [int(cid) for cid in city_ids]

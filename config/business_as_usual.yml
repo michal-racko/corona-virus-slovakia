@@ -1,23 +1,22 @@
+# No restrictions, no quarantine
+
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 200
+simulation_days: 360
 
 # === Population ===
 
-mean_stochastic_interactions: 4.3
-social_network_daily_ratio: 0.5
-suprespreader_ratio: 0.05
+mean_stochastic_interactions: 15 # 4.3
+#social_network_daily_ratio: 0.5
+#soc_net_contacts: 10.7
+suprespreader_ratio: 0
 respect_quarantine: 0
+quarantine_effifiency: 0
 quarantine_length: 14
 
-# === Restrictions ===
-
-restrictions:
-  - __type__: Interactions
-    day_start: 10
-    day_end: 500
-    ratio: 0.6
+lockdown_ratio: 0.05
+trace_contacts: false
 
 # === Medical ===
 
@@ -28,8 +27,8 @@ n_icu_beds: 1000
 
 virus:
   name: SARS-CoV2
-  transmission_probability: 0.0165
-  household_transmission_probability: 0.025
+  transmission_probability: 0.0115
+  household_transmission_probability: 0.064
   infectious_days_mean: 6.5
   infectious_days_std: 1
 
@@ -60,16 +59,16 @@ town_locations_file: data/obce1.xlsx
 age_distribution: data/age_distribution.json
 age_symptoms: data/age_symptoms.json
 household_distribution: data/households.json
-social_network: data/social/generated/watts_strogatz_triple_big.json
+social_network: data/social/generated/watts_strogatz_triple.json
 
 # === Outputs ===
 
-result_file: results/watts_strogatz_triple.json
+result_file: results/business_as_usual.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/watts_strogatz_triple
+  dir: plots/business_as_usual
   cities:
     - Martin
     - Nitra
@@ -82,10 +81,10 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/watts_strogatz_triple/checks
+check_plots: plots/business_as_usual/checks
 
 geographical:
   precision: 500
-  timeseries_dir: plots/geographical/watts_strogatz_triple
+  timeseries_dir: plots/geographical/business_as_usual
 
 n_processes: 12

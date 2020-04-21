@@ -37,10 +37,17 @@ class Virus:
 
         mean_interactions = mean_stochastic_interactions
 
+        try:
+            soc_net_contacts = config.get('soc_net_contacts')
+
+        except KeyError:
+            soc_net_contacts = 0
+
         self.R = (1 + input_data.mean_travel_ratio) * \
                  mean_interactions * self.illness_days_mean * self.transmission_probability + \
                  input_data.mean_household_daily_meetings * self.illness_days_mean * \
-                 self.household_transmission_probability
+                 self.household_transmission_probability + soc_net_contacts * self.illness_days_mean * \
+                 self.transmission_probability
 
         logging.info(
             f'Initialized {self.__class__.__name__} virus with R0={self.R:.4f}'

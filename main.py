@@ -19,6 +19,8 @@ except ImportError:
     cuda = False
     logging.warning('Failed to import cupy, using CPU')
 
+import numpy as np
+
 from tools.config import Config
 from tools.input_data import InputData
 from tools.simulation.virus import Virus
@@ -52,6 +54,7 @@ except TypeError:
 
     logging.info(f'Using config: {DEFAULT_CONFIG_PATH}')
 
+
 if __name__ == '__main__':
     virus = Virus.from_string(config.get('virus', 'name'))
     results = GeographicalResult()
@@ -62,7 +65,7 @@ if __name__ == '__main__':
 
     input_data = InputData()
 
-    mig_matrix = input_data.migration_matrix
+    population.set_od_matrix(input_data.migration_matrix)
 
     city_ids = input_data.get_city_ids()
     city_names = input_data.get_city_names()
@@ -74,9 +77,9 @@ if __name__ == '__main__':
     results.set_city_coords(city_longitudes, city_latitudes)
     results.set_city_sizes(city_sizes)
 
-    infected = input_data.get_infected()
+    initially_infected = input_data.get_infected()
 
-    population.infect_by_cities(city_ids, infected)
+    population.infect_by_cities(city_ids, initially_infected)
 
     results_file = config.get('result_file')
 
@@ -84,11 +87,6 @@ if __name__ == '__main__':
         if day_i % 10 == 0:
             logging.info(f'day: {day_i}')
 
-        _mig_matrix = cp.random.poisson(mig_matrix)
-
-        _mig_matrix = cp.diag(_mig_matrix) - cp.identity(len(_mig_matrix))
-
-        population.travel(_mig_matrix)
         population.next_day()
 
     results.add_parameters({
@@ -103,6 +101,12 @@ if __name__ == '__main__':
     results.set_config(
         config.to_dict()
     )
+
+    aggregated = results.get_total_timeseries()
+
+    r_eff = aggregated.susceptible / aggregated.susceptible[0] * virus.R
+
+    results.set_r_eff(r_eff.astype(float).tolist())
 
     results.to_json(results_file)
 

@@ -1,27 +1,22 @@
+# Some portion of symptomatic people stay at home
+
 # === Simulation parameters ===
 
 min_inhabitants: 0
-simulation_days: 220
+simulation_days: 200
 
 # === Population ===
 
-mean_stochastic_interactions: 15
+mean_stochastic_interactions: 4.3
+social_network_daily_ratio: 0.5
 suprespreader_ratio: 0.05
-respect_quarantine: 0.5
+respect_quarantine: 0.8
 quarantine_effifiency: 0.8
 quarantine_length: 14
 
-# === Restrictions ===
-
-restrictions:
-  - __type__: icu-based
-    icu_ratio_start: 0.7
-    icu_ratio_end: 0.5
-    ratio: 0.4
-
 # === Medical ===
 
-n_tests_daily: 1000
+n_tests_daily: 0
 n_icu_beds: 1000
 
 # === Parameters of the virus ===
@@ -60,15 +55,16 @@ town_locations_file: data/obce1.xlsx
 age_distribution: data/age_distribution.json
 age_symptoms: data/age_symptoms.json
 household_distribution: data/households.json
+social_network: data/social/generated/watts_strogatz_triple.json
 
 # === Outputs ===
 
-result_file: results/tests.json
+result_file: results/symptomatic_quarantine.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/tests
+  dir: plots/symptomatic_quarantine
   cities:
     - Martin
     - Nitra
@@ -81,10 +77,10 @@ individual_cities:
     - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/tests/checks
+check_plots: plots/symptomatic_quarantine/checks
 
 geographical:
   precision: 500
-  timeseries_dir: plots/geographical/tests
+  timeseries_dir: plots/geographical/symptomatic_quarantine
 
 n_processes: 12

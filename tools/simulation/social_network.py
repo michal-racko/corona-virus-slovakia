@@ -23,8 +23,8 @@ class SocialNetwork:
 
         for interaction_i, data in meeting_dict.items():
             self._interactions[int(interaction_i)] = {
-                'vertex_start': cp.array(data['vertex_start']),
-                'vertex_end': cp.array(data['vertex_end']),
+                'vertex_start': cp.array(data['vertex_start']).astype(int),
+                'vertex_end': cp.array(data['vertex_end']).astype(int),
             }
 
         self._daily_fraction = daily_fraction
@@ -63,6 +63,57 @@ class SocialNetwork:
         random_mask = cp.random.random(len(vertex_start)) <= self._daily_fraction
 
         return vertex_start[random_mask], vertex_end[random_mask]
+
+    def get_contacts(self, indices):
+        """
+        Returns all contacts of the given indices
+        """
+        indices = cp.sort(indices)
+
+        res = []
+
+        for start_vertices, end_vertices in self:
+            _indices = cp.searchsorted(start_vertices, indices)
+            _indices = _indices[_indices != 0]
+
+            if len(_indices) == 0:
+                continue
+
+            res.append(end_vertices[_indices])
+
+        if len(res) == 0:
+            return cp.array([])
+
+        else:
+            return cp.hstack(res)
+
+    def trace(self, indices: cp.ndarray, recursion_depth: int, efficiency: float) -> cp.ndarray:
+        """
+        Searches contacts of the given indices (start vertices) up to the given recursion depth.
+        Only (1 - efficiency) contacts will be returned
+
+        :param indices:                 desired indices
+
+        :param recursion_depth:         desired recursion depth
+
+        :param efficiency:              efficiency of contact tracing
+
+        :return:                        indices of corresponding contacts (end vertices)
+        """
+        res = []
+
+        searched = indices
+
+        for i in range(recursion_depth):
+            contacts = self._search_contacts(searched)
+
+            contacts = contacts[cp.random.random(len(contacts)) <= efficiency]
+
+            res.append(contacts)
+
+            searched = cp.hstack(res)
+
+        return cp.hstack(searched)
 
     @classmethod
     def read_json(cls, filepath: str, daily_fraction=0.3):

@@ -1,34 +1,31 @@
+# No restrictions, no quarantine
+
 # === Simulation parameters ===
 
-min_inhabitants: 0
-simulation_days: 220
+min_inhabitants: 103189
+simulation_days: 460
 
 # === Population ===
 
-mean_stochastic_interactions: 15
-suprespreader_ratio: 0.05
-respect_quarantine: 0.5
-quarantine_effifiency: 0.8
+mean_stochastic_interactions: 4.1
+suprespreader_ratio: 0
+respect_quarantine: 0.9
+quarantine_effifiency: 0.9
 quarantine_length: 14
 
-# === Restrictions ===
-
-restrictions:
-  - __type__: icu-based
-    icu_ratio_start: 0.7
-    icu_ratio_end: 0.5
-    ratio: 0.4
+lockdown_ratio: 0.05
+trace_contacts: false
 
 # === Medical ===
 
-n_tests_daily: 1000
+n_tests_daily: 0
 n_icu_beds: 1000
 
 # === Parameters of the virus ===
 
 virus:
   name: SARS-CoV2
-  transmission_probability: 0.0165
+  transmission_probability: 0.03
   household_transmission_probability: 0.025
   infectious_days_mean: 6.5
   infectious_days_std: 1
@@ -63,28 +60,28 @@ household_distribution: data/households.json
 
 # === Outputs ===
 
-result_file: results/tests.json
+result_file: results/households.json
 
 # === Plotting ===
 
 individual_cities:
-  dir: plots/tests
+  dir: plots/households
   cities:
-    - Martin
-    - Nitra
-    - Trenčín
-    - Trnava
-    - Banská Bystrica
-    - Žilina
-    - Poprad
-    - Prešov
-    - Bratislava-Ružinov
+#    - Martin
+#    - Nitra
+#    - Trenčín
+#    - Trnava
+#    - Banská Bystrica
+#    - Žilina
+#    - Poprad
+#    - Prešov
+#    - Bratislava-Ružinov
     - Bratislava-Petržalka
 
-check_plots: plots/tests/checks
+check_plots: plots/households/checks
 
 geographical:
   precision: 500
-  timeseries_dir: plots/geographical/tests
+  timeseries_dir: plots/geographical/households
 
 n_processes: 12
